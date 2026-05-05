@@ -1,0 +1,158 @@
+.wish-section {
+  padding-bottom: 90px;
+}
+
+.wish-card {
+  margin-bottom: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #e1e7e3;
+  box-shadow: 0 8px 20px rgba(7, 20, 38, 0.04);
+}
+
+.wish-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.wish-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #071426;
+}
+
+.wish-brand {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #6f7b78;
+}
+
+.wish-icons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wish-bell {
+  color: #c8d1cc;
+  font-size: 18px;
+}
+
+.wish-bell.active {
+  color: #8bcf3f;
+}
+
+.wish-bell {
+  color: #c8d1cc;
+  font-size: 18px;
+}
+
+.wish-bell.active {
+  color: #a7d957; /* 알림 설정과 동일 */
+}
+
+.wish-toggle {
+  width: 46px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: #d1d5db; /* OFF 상태 */
+  position: relative;
+  padding: 0;
+}
+
+.wish-toggle span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+/* ON 상태 (알림 설정과 동일 색) */
+.wish-toggle.on {
+  background: #a7d957;
+}
+
+.wish-toggle.on span {
+  left: 23px;
+}
+
+.wish-row {
+  display: grid;
+  grid-template-columns: 82px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.wish-row span {
+  color: #6f7b78;
+}
+
+.wish-row strong {
+  font-size: 22px;
+  font-weight: 900;
+  color: #05070a;
+  text-align: right;
+}
+
+.wish-row em {
+  padding: 4px 6px;
+  border-radius: 7px;
+  color: white;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.wish-row em.down {
+  background: #05070a;
+}
+
+.wish-row em.up {
+  background: #ef4444;
+}
+
+.wish-row .target {
+  color: #2563eb;
+  font-size: 14px;
+  text-align: right;
+  font-weight: 700;
+}
+
+.wish-row .lowest {
+  color: #10b956;
+  font-size: 14px;
+  text-align: right;
+  font-weight: 700;
+}
+
+.wish-buy {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #9bd64e;
+  color: #071426;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.wish-alert {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #facc15;
+  background: #fffdf0;
+  color: #b45309;
+  font-size: 13px;
+}

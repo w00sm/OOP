@@ -1,0 +1,108 @@
+.recommend-page {
+  padding-bottom: 90px;
+}
+
+.load-info-button {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #d7eac0;
+  background: #f8fff0;
+  color: #94c94e;
+  font-weight: 800;
+}
+
+.recommend-box {
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.recommend-box label {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #071426;
+}
+
+.recommend-box select {
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #f3f4f6;
+  font-size: 14px;
+  outline: none;
+  color: #071426;
+}
+
+.gender-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.gender-buttons button {
+  flex: 1;
+  padding: 13px;
+  border: 0;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #071426;
+  font-weight: 700;
+}
+
+.gender-buttons button.active {
+  background: #a7d957;
+  color: white;
+}
+
+.ai-message {
+  width: fit-content;
+  max-width: 230px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #071426;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ai-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-input-row input {
+  flex: 1;
+  padding: 13px;
+  border: 0;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #071426;
+  outline: none;
+}
+
+.ai-input-row button {
+  width: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: #9bd84f;
+  color: #071426;
+  font-size: 18px;
+}
+
+.recommend-submit {
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: 18px;
+  background: #9bd84f;
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+}
