@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronLeft, Heart, House, Search, Sparkles, UserRound } from "lucide-react";
 import "./Home.css";
 
 import HomeTab from "./pages/HomeTab";
@@ -32,6 +33,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
   const [showNotificationPage, setShowNotificationPage] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [recommendedIngredients, setRecommendedIngredients] = useState<string[]>([]);
   const wishlist = useWishlist();
 
   const [supplements, setSupplements] = useState<Supplement[]>(() => {
@@ -122,6 +124,13 @@ export default function Home() {
     setActiveTab("검색");
   };
 
+  // 추천탭의 '맞춤 영양제 추천받기': 추천 성분 전체로 검색탭을 엽니다.
+  const goToRecommendedSearch = (ingredients: string[]) => {
+    setRecommendedIngredients(ingredients);
+    setSearchKeyword("");
+    setActiveTab("검색");
+  };
+
   return (
     <div className="container">
       {activeTab === "홈" && (
@@ -136,6 +145,8 @@ export default function Home() {
         <SearchTab
           keyword={searchKeyword}
           onKeywordChange={setSearchKeyword}
+          recommendedIngredients={recommendedIngredients}
+          onClearRecommended={() => setRecommendedIngredients([])}
           wishlist={wishlist}
           onOpenNotification={openAlarmPage}
         />
@@ -145,6 +156,7 @@ export default function Home() {
         <RecommendTab
           onOpenNotification={openAlarmPage}
           onSearch={goToSearch}
+          onRecommend={goToRecommendedSearch}
         />
       )}
 
@@ -179,7 +191,7 @@ export default function Home() {
               className="mypage-back"
               onClick={() => setShowNotificationPage(false)}
             >
-              ‹
+              <ChevronLeft size={28} />
             </button>
             <h1>알림</h1>
           </div>
@@ -209,7 +221,7 @@ export default function Home() {
             setShowNotificationPage(false);
           }}
         >
-          <span className="nav-icon">⌂</span>
+          <span className="nav-icon"><House size={22} /></span>
           <span>홈</span>
         </button>
 
@@ -220,7 +232,7 @@ export default function Home() {
             setShowNotificationPage(false);
           }}
         >
-          <span className="nav-icon">⌕</span>
+          <span className="nav-icon"><Search size={22} /></span>
           <span>검색</span>
         </button>
 
@@ -231,7 +243,7 @@ export default function Home() {
             setShowNotificationPage(false);
           }}
         >
-          <span className="nav-icon">♧</span>
+          <span className="nav-icon"><Sparkles size={22} /></span>
           <span>추천</span>
         </button>
 
@@ -242,7 +254,7 @@ export default function Home() {
             setShowNotificationPage(false);
           }}
         >
-          <span className="nav-icon">♡</span>
+          <span className="nav-icon"><Heart size={22} /></span>
           <span>찜</span>
         </button>
 
@@ -253,7 +265,7 @@ export default function Home() {
             setShowNotificationPage(false);
           }}
         >
-          <span className="nav-icon">♙</span>
+          <span className="nav-icon"><UserRound size={22} /></span>
           <span>마이페이지</span>
         </button>
       </div>

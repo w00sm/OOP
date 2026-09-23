@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Bell, BellRing, Pencil, ShoppingBag, Trash2 } from "lucide-react";
 import type { WishItem, Wishlist } from "../../hooks/useWishlist";
 import {
   formatPrice,
@@ -51,9 +52,10 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
         <button
           type="button"
           className="top-bell-button"
+          aria-label="알림"
           onClick={onOpenNotification}
         >
-          ♧
+          <Bell size={22} strokeWidth={2} />
         </button>
       </div>
 
@@ -62,7 +64,7 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
           <div className="wish-empty">
             아직 찜한 상품이 없어요.
             <br />
-            검색탭에서 ♡를 눌러 추가해 보세요.
+            검색탭에서 하트를 눌러 추가해 보세요.
           </div>
         )}
 
@@ -90,7 +92,7 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
                       item.lowestPriceAlarm ? "active" : ""
                     }`}
                   >
-                    ♧
+                    <BellRing size={18} />
                   </span>
 
                   <button
@@ -151,8 +153,8 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
                   >
                     {item.targetPrice
                       ? formatPrice(item.targetPrice)
-                      : "설정하기"}{" "}
-                    ✎
+                      : "설정하기"}
+                    <Pencil size={13} />
                   </button>
                 )}
               </div>
@@ -166,9 +168,10 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
                 <button
                   type="button"
                   className="wish-remove"
+                  aria-label="삭제"
                   onClick={() => wishlist.toggleWish(item.productId)}
                 >
-                  삭제
+                  <Trash2 size={18} />
                 </button>
                 <a
                   className="wish-buy"
@@ -176,6 +179,7 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
                   target="_blank"
                   rel="noreferrer"
                 >
+                  <ShoppingBag size={18} />
                   구매하기
                 </a>
               </div>

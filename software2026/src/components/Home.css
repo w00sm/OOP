@@ -49,11 +49,16 @@ button:active {
 }
 
 .top-bell-button {
-  border: 0;
-  background: transparent;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e1e7e3;
+  border-radius: 50%;
+  background: white;
   color: #05070a;
-  font-size: 24px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .bottom-nav {
@@ -87,7 +92,7 @@ button:active {
 }
 
 .bottom-nav .nav-icon {
-  font-size: 22px;
+  display: flex;
   line-height: 1;
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import { getOpenAI } from "../../services/openaiClient";
 import type { Supplement, TimeCategory } from "../Home";
@@ -251,9 +252,10 @@ export default function HomeTab({
         <button
           type="button"
           className="top-bell-button"
+          aria-label="알림"
           onClick={onOpenNotification}
         >
-          ♧
+          <Bell size={22} strokeWidth={2} />
         </button>
       </div>
 

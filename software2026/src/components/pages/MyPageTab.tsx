@@ -1,4 +1,11 @@
 import { useState } from "react";
+import {
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Megaphone,
+  UserRound,
+} from "lucide-react";
 import GoogleLoginButton from "../GoogleLoginButton";
 import "../styles/MyPageTab.css";
 
@@ -128,9 +135,10 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
             <button
               type="button"
               className="mypage-bell-button"
+              aria-label="알림"
               onClick={onOpenNotification}
             >
-              ♧
+              <Bell size={22} strokeWidth={2} />
             </button>
           </div>
 
@@ -143,7 +151,9 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
                   className="mypage-profile-image"
                 />
               ) : (
-                <div className="mypage-profile-icon">👤</div>
+                <div className="mypage-profile-icon">
+                  <UserRound size={26} color="white" />
+                </div>
               )}
 
               <div>
@@ -167,10 +177,10 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
               onClick={() => setMyPageView("info")}
             >
               <span className="mypage-menu-left">
-                <span className="mypage-menu-icon">♙</span>
+                <span className="mypage-menu-icon"><UserRound size={18} /></span>
                 내 정보
               </span>
-              <span className="mypage-menu-arrow">›</span>
+              <span className="mypage-menu-arrow"><ChevronRight size={20} /></span>
             </button>
 
             <button
@@ -179,10 +189,10 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
               onClick={() => setMyPageView("alarm")}
             >
               <span className="mypage-menu-left">
-                <span className="mypage-menu-icon">♧</span>
+                <span className="mypage-menu-icon"><Bell size={18} /></span>
                 알림 설정
               </span>
-              <span className="mypage-menu-arrow">›</span>
+              <span className="mypage-menu-arrow"><ChevronRight size={20} /></span>
             </button>
 
             <button
@@ -191,10 +201,10 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
               onClick={() => setMyPageView("notice")}
             >
               <span className="mypage-menu-left">
-                <span className="mypage-menu-icon">▤</span>
+                <span className="mypage-menu-icon"><Megaphone size={18} /></span>
                 공지사항
               </span>
-              <span className="mypage-menu-arrow">›</span>
+              <span className="mypage-menu-arrow"><ChevronRight size={20} /></span>
             </button>
           </div>
 
@@ -214,7 +224,7 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
         <>
           <div className="mypage-sub-header">
             <button type="button" className="mypage-back" onClick={goMain}>
-              ‹
+              <ChevronLeft size={28} />
             </button>
             <h1>내 정보</h1>
           </div>
@@ -288,7 +298,7 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
         <>
           <div className="mypage-sub-header">
             <button type="button" className="mypage-back" onClick={goMain}>
-              ‹
+              <ChevronLeft size={28} />
             </button>
             <h1>알림 설정</h1>
           </div>
@@ -355,7 +365,7 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
         <>
           <div className="mypage-sub-header">
             <button type="button" className="mypage-back" onClick={goMain}>
-              ‹
+              <ChevronLeft size={28} />
             </button>
             <h1>공지사항</h1>
           </div>

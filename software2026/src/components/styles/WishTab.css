@@ -224,3 +224,28 @@
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* 아이콘 정렬 */
+.wish-bell {
+  display: flex;
+}
+
+.wish-row .target {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.wish-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wish-buy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

@@ -94,6 +94,9 @@
   background: #9bd84f;
   color: #071426;
   font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .recommend-submit {
@@ -244,4 +247,15 @@
 .recommend-result-item strong {
   color: #8bcf3f;
   font-weight: 800;
+}
+.recommend-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.recommend-submit:disabled,
+.consult-complete-button:disabled {
+  opacity: 0.6;
 }

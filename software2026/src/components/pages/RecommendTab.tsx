@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Bell, SendHorizontal, Sparkles } from "lucide-react";
 import { getOpenAI, hasOpenAIKey } from "../../services/openaiClient";
 import { findConcerns, recommend } from "../../services/recommendService";
 import "../styles/RecommendTab.css";
@@ -6,6 +7,7 @@ import "../styles/RecommendTab.css";
 type RecommendTabProps = {
   onOpenNotification: () => void;
   onSearch: (keyword: string) => void;
+  onRecommend: (ingredients: string[]) => void; // 추천 성분 전체로 검색탭 열기
 };
 
 type SavedProfile = {
@@ -37,6 +39,7 @@ function ruleBasedReply(text: string) {
 export default function RecommendTab({
   onOpenNotification,
   onSearch,
+  onRecommend,
 }: RecommendTabProps) {
   const currentYear = new Date().getFullYear();
 
@@ -160,27 +163,21 @@ ${gender ? `- 성별: ${gender}` : ""}
     }
   };
 
-  const handleCompleteConsultation = async () => {
-    if (isLoading || isCompleting) return;
-
-    const realConversation = chatMessages.filter(
+  const getRealConversation = () =>
+    chatMessages.filter(
       (message) =>
         !message.content.includes("안녕하세요! 어떤 증상이나 건강 고민이 있으신가요?")
     );
 
-    if (realConversation.length === 0) {
-      setModalMessage("상담 내용을 먼저 입력해주세요.");
-      return;
+  // 상담 내용으로 추천 성분을 정리합니다. (AI → 실패하거나 키가 없으면 규칙 기반)
+  const fetchRecommendations = async (
+    realConversation: ChatMessage[]
+  ): Promise<RecommendedItem[]> => {
+    if (!hasOpenAIKey || realConversation.length === 0) {
+      return ruleBasedItems();
     }
 
-    setIsCompleting(true);
-
     try {
-      if (!hasOpenAIKey) {
-        setRecommendedList(await ruleBasedItems());
-        return;
-      }
-
       const response = await getOpenAI().chat.completions.create({
         model: "gpt-4o-mini",
         response_format: { type: "json_object" },
@@ -215,19 +212,50 @@ ${realConversation
       const content = response.choices[0].message.content || "";
       const parsed = JSON.parse(content);
 
-      if (Array.isArray(parsed.items)) {
-        setRecommendedList(parsed.items);
-      } else {
-        setRecommendedList([]);
-        setModalMessage("추천 결과를 정리하지 못했습니다. 다시 시도해주세요.");
+      if (Array.isArray(parsed.items) && parsed.items.length > 0) {
+        return parsed.items;
       }
+      throw new Error("추천 결과 형식이 올바르지 않습니다.");
     } catch (error) {
       console.error("상담 완료 오류:", error);
-      setRecommendedList(await ruleBasedItems());
       setModalMessage("AI 연결에 실패해 기본 추천을 보여드려요.");
+      return ruleBasedItems();
+    }
+  };
+
+  const handleCompleteConsultation = async () => {
+    if (isLoading || isCompleting) return;
+
+    const realConversation = getRealConversation();
+    if (realConversation.length === 0) {
+      setModalMessage("상담 내용을 먼저 입력해주세요.");
+      return;
+    }
+
+    setIsCompleting(true);
+    try {
+      setRecommendedList(await fetchRecommendations(realConversation));
     } finally {
       setIsCompleting(false);
     }
+  };
+
+  // '맞춤 영양제 추천받기': 추천 성분이 없으면 먼저 정리한 뒤, 그 성분들로 검색탭을 엽니다.
+  const handleRecommendProducts = async () => {
+    if (isLoading || isCompleting) return;
+
+    let items = recommendedList;
+    if (items.length === 0) {
+      setIsCompleting(true);
+      try {
+        items = await fetchRecommendations(getRealConversation());
+        setRecommendedList(items);
+      } finally {
+        setIsCompleting(false);
+      }
+    }
+
+    onRecommend(items.map((item) => item.name));
   };
 
   return (
@@ -241,9 +269,10 @@ ${realConversation
         <button
           type="button"
           className="top-bell-button"
+          aria-label="알림"
           onClick={onOpenNotification}
         >
-          ♧
+          <Bell size={22} strokeWidth={2} />
         </button>
       </div>
 
@@ -335,7 +364,7 @@ ${realConversation
               onClick={handleChatSubmit}
               disabled={isLoading || isCompleting}
             >
-              {isLoading ? "..." : "➤"}
+              {isLoading ? "..." : <SendHorizontal size={18} />}
             </button>
           </div>
 
@@ -374,9 +403,10 @@ ${realConversation
         <button
           type="button"
           className="recommend-submit"
-          onClick={handleCompleteConsultation}
+          onClick={handleRecommendProducts}
           disabled={isLoading || isCompleting}
         >
+          <Sparkles size={18} />
           맞춤 영양제 추천받기
         </button>
       </div>
