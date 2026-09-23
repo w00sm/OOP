@@ -7,7 +7,7 @@ import {
   getPriceStats,
   matchedIngredients,
   recommendProducts,
-  searchProducts,
+  searchWithSuggestion,
   type Product,
   type SortOption,
 } from "../../services/productService";
@@ -25,6 +25,16 @@ type SearchTabProps = {
 // 이보다 작은 할인율은 의미가 적어 표시하지 않습니다.
 const MIN_DISCOUNT_TO_SHOW = 3;
 
+// 단어 끝 받침에 맞춰 '을/를'을 고릅니다. (철분을, 비타민B를, 오메가3을)
+function objectParticle(word: string) {
+  const last = word.trim().slice(-1).toUpperCase();
+  const code = last.charCodeAt(0) - 0xac00;
+  if (code >= 0 && code <= 11171) return code % 28 === 0 ? "를" : "을";
+  if ("013678LMN".includes(last)) return "을"; // 영·일·삼·육·칠·팔, 엘·엠·엔
+  if (/[0-9A-Z]/.test(last)) return "를";
+  return "을(를)";
+}
+
 const POPULAR_KEYWORDS = ["비타민D", "오메가3", "유산균", "마그네슘", "루테인", "피로"];
 
 export default function SearchTab({
@@ -37,6 +47,7 @@ export default function SearchTab({
 }: SearchTabProps) {
   const [sort, setSort] = useState<SortOption>("sim");
   const [results, setResults] = useState<Product[]>([]);
+  const [suggestion, setSuggestion] = useState<string | null>(null); // 오타 교정 단어
   const [selectedIngredient, setSelectedIngredient] = useState("");
   // 입력창에 적는 중인 글자. 돋보기나 Enter를 눌러야 검색어(keyword)로 반영됩니다.
   const [inputValue, setInputValue] = useState(keyword);
@@ -66,11 +77,13 @@ export default function SearchTab({
       ? recommendProducts(
           activeIngredient ? [activeIngredient] : recommendedIngredients,
           sort
-        )
-      : searchProducts(keyword, sort);
+        ).then((products) => ({ products, suggestion: null }))
+      : searchWithSuggestion(keyword, sort);
 
-    request.then((products) => {
-      if (!cancelled) setResults(products);
+    request.then(({ products, suggestion }) => {
+      if (cancelled) return;
+      setResults(products);
+      setSuggestion(suggestion);
     });
     return () => {
       cancelled = true;
@@ -174,6 +187,21 @@ export default function SearchTab({
               ))}
             </div>
           </>
+        )}
+
+        {hasKeyword && suggestion && (
+          <div className="suggestion-banner">
+            <p>
+              <b>'{keyword}'</b>에 대한 검색 결과가 없어요.
+            </p>
+            <p>
+              혹시{" "}
+              <button type="button" onClick={() => runSearch(suggestion)}>
+                '{suggestion}'
+              </button>
+              {objectParticle(suggestion)} 찾고 계신가요?
+            </p>
+          </div>
         )}
 
         {showResults && (

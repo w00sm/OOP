@@ -4,6 +4,7 @@
 // 이 파일의 searchProducts / getProductsByIds 내부만 바꾸면 됩니다.
 
 import { PRODUCT_SEEDS, type ProductSeed } from "../data/products";
+import { closestWord } from "./fuzzy";
 
 export type PricePoint = {
   date: string; // YYYY-MM-DD
@@ -108,11 +109,24 @@ const ALIASES: Record<string, string> = {
   멀티비타민: "종합비타민",
 };
 
+// "비타민디", "비타민씨"처럼 알파벳을 한글 발음으로 쓴 경우
+const VITAMIN_LETTERS: Record<string, string> = {
+  에이: "a",
+  비: "b",
+  씨: "c",
+  디: "d",
+  케이: "k",
+};
+
 const normalize = (text: string) => {
   const cleaned = text
     .toLowerCase()
     .replace(/\(.*?\)/g, "") // 괄호 안 설명 제거: "마그네슘 (Magnesium)"
-    .replace(/[\s\-·_]/g, "");
+    .replace(/[\s\-·_]/g, "")
+    .replace(
+      /비타민(에이|비|씨|디|케이)(?![가-힣])/g,
+      (_, letter: string) => `비타민${VITAMIN_LETTERS[letter]}`
+    );
   return ALIASES[cleaned] ?? cleaned;
 };
 
@@ -177,6 +191,40 @@ export async function searchProducts(
   })).filter((item) => item.score > 0);
 
   return sortResults(results, sort);
+}
+
+// 오타 교정 후보 단어: 성분, 카테고리, 고민, 브랜드, 제품명에 들어간 한글 단어
+// 성분·카테고리를 앞에 두어 비슷한 점수일 때 우선 추천되게 합니다.
+const SEARCH_WORDS = [
+  ...new Set([
+    ...PRODUCTS.flatMap((product) => [...product.ingredients, product.category]),
+    ...PRODUCTS.flatMap((product) => product.tags),
+    ...PRODUCTS.map((product) => product.brand),
+    ...PRODUCTS.flatMap((product) =>
+      product.title.split(/\s+/).filter((word) => /[가-힣]{2,}/.test(word))
+    ),
+  ]),
+];
+
+export type SearchResult = {
+  products: Product[];
+  suggestion: string | null; // 결과가 없어서 대신 검색한 단어 ("철부" → "철분")
+};
+
+// 검색 결과가 없으면 가장 비슷한 단어로 다시 검색합니다.
+export async function searchWithSuggestion(
+  query: string,
+  sort: SortOption = "sim"
+): Promise<SearchResult> {
+  const products = await searchProducts(query, sort);
+  if (products.length > 0 || query.trim() === "") {
+    return { products, suggestion: null };
+  }
+
+  const suggestion = closestWord(query.replace(/\s+/g, ""), SEARCH_WORDS);
+  if (!suggestion) return { products: [], suggestion: null };
+
+  return { products: await searchProducts(suggestion, sort), suggestion };
 }
 
 // 추천탭에서 받은 성분 목록에 맞는 상품을 찾습니다.
