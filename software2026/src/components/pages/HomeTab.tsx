@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Lightbulb, Package, Trash2, TriangleAlert, X } from "lucide-react";
+import {
+  Lightbulb,
+  Moon,
+  Package,
+  Sun,
+  Sunrise,
+  Trash2,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import NotificationBell from "../NotificationBell";
 import type { Dispatch, SetStateAction } from "react";
 import { getOpenAI } from "../../services/openaiClient";
@@ -378,9 +387,9 @@ export default function HomeTab({
                 className={selectedTime === time ? "active" : ""}
                 onClick={() => setSelectedTime(time)}
               >
-                {time === "아침" && "🌅 "}
-                {time === "점심" && "🍽️ "}
-                {time === "저녁" && "🌙 "}
+                {time === "아침" && <Sunrise size={17} className="time-icon morning" />}
+                {time === "점심" && <Sun size={17} className="time-icon noon" />}
+                {time === "저녁" && <Moon size={16} className="time-icon night" />}
                 {time}
               </button>
             ))}

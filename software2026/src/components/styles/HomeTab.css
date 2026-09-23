@@ -133,6 +133,30 @@
   color: white;
 }
 
+.time-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* 시간대 아이콘: 평소엔 시간대 색, 선택되면 흰색 */
+.time-icon.morning {
+  color: #f59e0b;
+}
+
+.time-icon.noon {
+  color: #f97316;
+}
+
+.time-icon.night {
+  color: #6366f1;
+}
+
+.time-tabs button.active .time-icon {
+  color: white;
+}
+
 .card {
   margin-bottom: 12px;
   padding: 17px;
