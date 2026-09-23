@@ -1,0 +1,77 @@
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f7faf7;
+  color: #071426;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+  cursor: pointer;
+}
+
+.loading-screen.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-brand {
+  position: absolute;
+  top: calc(28px + env(safe-area-inset-top));
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  color: #6aa82c;
+}
+
+/* 스프라이트 시트 한 칸(229 x 221)을 보여줌. 위치는 컴포넌트에서 컷·구간별로 지정 */
+.loading-character {
+  width: 220px;
+  aspect-ratio: 229 / 221;
+  background-image: url("/loading/character-sheet.png");
+  background-size: 300% 500%;
+  background-repeat: no-repeat;
+  /* 컷이 바뀔 때 부드럽게 넘어가지 않고 뚝뚝 끊겨야 스톱모션처럼 보입니다 */
+  transition: none;
+}
+
+.loading-rate {
+  margin-top: 20px;
+  font-size: 15px;
+  color: #6f7b78;
+}
+
+.loading-rate strong {
+  margin-left: 4px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #071426;
+}
+
+.loading-bar {
+  width: 180px;
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #e5ece7;
+  overflow: hidden;
+}
+
+.loading-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c8f27d, #5dcb6a);
+  transition: none;
+}
+
+.loading-message {
+  margin: 14px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4b5563;
+}

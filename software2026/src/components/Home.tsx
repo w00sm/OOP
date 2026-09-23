@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ChevronLeft, Heart, House, Search, Sparkles, UserRound } from "lucide-react";
 import "./Home.css";
 
@@ -9,6 +9,7 @@ import WishTab from "./pages/WishTab";
 import MyPageTab from "./pages/MyPageTab";
 import { useWishlist } from "../hooks/useWishlist";
 import InstallBanner from "./InstallBanner";
+import LoadingScreen from "./LoadingScreen";
 import { useAlertScheduler } from "../hooks/useAlertScheduler";
 import { useCloudSync } from "../hooks/useCloudSync";
 import { useNotifications } from "../hooks/useNotifications";
@@ -31,6 +32,8 @@ export type Supplement = {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
   const [showNotificationPage, setShowNotificationPage] = useState(false);
+  const [showLoading, setShowLoading] = useState(true); // 앱에 들어올 때 한 번만
+  const hideLoading = useCallback(() => setShowLoading(false), []);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [recommendedIngredients, setRecommendedIngredients] = useState<string[]>([]);
   const wishlist = useWishlist();
@@ -196,6 +199,10 @@ export default function Home() {
             ))}
           </div>
         </div>
+      )}
+
+      {showLoading && (
+        <LoadingScreen supplements={supplements} onDone={hideLoading} />
       )}
 
       <div className="bottom-nav">
