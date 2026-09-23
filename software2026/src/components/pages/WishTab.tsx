@@ -1,55 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { WishItem, Wishlist } from "../../hooks/useWishlist";
+import {
+  formatPrice,
+  getPriceStats,
+  getProductsByIds,
+  type Product,
+} from "../../services/productService";
 import "../styles/WishTab.css";
 
 type WishTabProps = {
+  wishlist: Wishlist;
   onOpenNotification: () => void;
 };
 
-export default function WishTab({ onOpenNotification }: WishTabProps) {
-  const [wishItems, setWishItems] = useState([
-    {
-      name: "오메가3 1000mg",
-      brand: "브랜드D",
-      price: "28,000원",
-      change: "-5%",
-      changeType: "down",
-      targetPrice: "25,000원",
-      lowestPrice: "24,500원",
-      stockAlert: "",
-      lowestPriceAlarm: true,
-    },
-    {
-      name: "비타민D 5000IU",
-      brand: "브랜드E",
-      price: "16,800원",
-      change: "+3%",
-      changeType: "up",
-      targetPrice: "15,000원",
-      lowestPrice: "14,900원",
-      stockAlert: "⚠ 재고가 7일분 남았습니다",
-      lowestPriceAlarm: true,
-    },
-    {
-      name: "블랙 프라이데이 특가 멀티비타민",
-      brand: "브랜드F",
-      price: "32,000원",
-      change: "-12%",
-      changeType: "down",
-      targetPrice: "29,000원",
-      lowestPrice: "28,500원",
-      stockAlert: "",
-      lowestPriceAlarm: false,
-    },
-  ]);
+export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [targetInput, setTargetInput] = useState("");
 
-  const toggleLowestPriceAlarm = (index: number) => {
-    setWishItems((prev) =>
-      prev.map((item, itemIndex) =>
-        itemIndex === index
-          ? { ...item, lowestPriceAlarm: !item.lowestPriceAlarm }
-          : item
-      )
-    );
+  const productIds = wishlist.wishlist.map((item) => item.productId).join(",");
+
+  useEffect(() => {
+    let cancelled = false;
+    getProductsByIds(productIds ? productIds.split(",") : []).then((items) => {
+      if (!cancelled) setProducts(items);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [productIds]);
+
+  const startEditTarget = (item: WishItem) => {
+    setEditingId(item.productId);
+    setTargetInput(item.targetPrice ? String(item.targetPrice) : "");
+  };
+
+  const saveTarget = (productId: string) => {
+    const value = Number(targetInput.replace(/[^0-9]/g, ""));
+    wishlist.updateWish(productId, { targetPrice: value > 0 ? value : null });
+    setEditingId(null);
   };
 
   return (
@@ -69,61 +58,130 @@ export default function WishTab({ onOpenNotification }: WishTabProps) {
       </div>
 
       <div className="wish-section">
-        {wishItems.map((item, index) => (
-          <div className="wish-card" key={item.name}>
-            <div className="wish-top">
-              <div>
-                <div className="wish-name">{item.name}</div>
-                <div className="wish-brand">{item.brand}</div>
+        {wishlist.wishlist.length === 0 && (
+          <div className="wish-empty">
+            아직 찜한 상품이 없어요.
+            <br />
+            검색탭에서 ♡를 눌러 추가해 보세요.
+          </div>
+        )}
+
+        {wishlist.wishlist.map((item) => {
+          const product = products.find((p) => p.productId === item.productId);
+          if (!product) return null;
+
+          const stats = getPriceStats(product);
+          const reachedTarget =
+            item.targetPrice !== null && stats.current <= item.targetPrice;
+
+          return (
+            <div className="wish-card" key={item.productId}>
+              <div className="wish-top">
+                <div>
+                  <div className="wish-name">{product.title}</div>
+                  <div className="wish-brand">
+                    {product.brand} · {product.mallName}
+                  </div>
+                </div>
+
+                <div className="wish-icons">
+                  <span
+                    className={`wish-bell ${
+                      item.lowestPriceAlarm ? "active" : ""
+                    }`}
+                  >
+                    ♧
+                  </span>
+
+                  <button
+                    type="button"
+                    aria-label="최저가 알림 설정"
+                    className={`wish-toggle ${item.lowestPriceAlarm ? "on" : ""}`}
+                    onClick={() =>
+                      wishlist.updateWish(item.productId, {
+                        lowestPriceAlarm: !item.lowestPriceAlarm,
+                      })
+                    }
+                  >
+                    <span></span>
+                  </button>
+                </div>
               </div>
 
-              <div className="wish-icons">
-                <span
-                  className={`wish-bell ${
-                    item.lowestPriceAlarm ? "active" : ""
-                  }`}
-                >
-                  ♧
-                </span>
+              {(reachedTarget || stats.isLowest) && (
+                <div className="wish-badges">
+                  {reachedTarget && (
+                    <span className="wish-badge target">목표가 도달</span>
+                  )}
+                  {stats.isLowest && (
+                    <span className="wish-badge lowest">90일 최저가</span>
+                  )}
+                </div>
+              )}
 
+              <div className="wish-row">
+                <span>현재 가격</span>
+                <strong>{formatPrice(stats.current)}</strong>
+                <em className={stats.changeRate > 0 ? "up" : "down"}>
+                  {stats.changeRate > 0 ? "+" : ""}
+                  {stats.changeRate}%
+                </em>
+              </div>
+
+              <div className="wish-row">
+                <span>목표 가격</span>
+                {editingId === item.productId ? (
+                  <input
+                    className="target-input"
+                    inputMode="numeric"
+                    autoFocus
+                    placeholder="예: 25000"
+                    value={targetInput}
+                    onChange={(e) => setTargetInput(e.target.value)}
+                    onBlur={() => saveTarget(item.productId)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveTarget(item.productId);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    className="target"
+                    onClick={() => startEditTarget(item)}
+                  >
+                    {item.targetPrice
+                      ? formatPrice(item.targetPrice)
+                      : "설정하기"}{" "}
+                    ✎
+                  </button>
+                )}
+              </div>
+
+              <div className="wish-row">
+                <span>3개월 최저가</span>
+                <b className="lowest">{formatPrice(stats.lowest)}</b>
+              </div>
+
+              <div className="wish-actions">
                 <button
                   type="button"
-                  aria-label="최저가 알림 설정"
-                  className={`wish-toggle ${
-                    item.lowestPriceAlarm ? "on" : ""
-                  }`}
-                  onClick={() => toggleLowestPriceAlarm(index)}
+                  className="wish-remove"
+                  onClick={() => wishlist.toggleWish(item.productId)}
                 >
-                  <span></span>
+                  삭제
                 </button>
+                <a
+                  className="wish-buy"
+                  href={product.link}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  구매하기
+                </a>
               </div>
             </div>
-
-            <div className="wish-row">
-              <span>현재 가격</span>
-              <strong>{item.price}</strong>
-              <em className={item.changeType === "up" ? "up" : "down"}>
-                {item.change}
-              </em>
-            </div>
-
-            <div className="wish-row">
-              <span>목표 가격</span>
-              <b className="target">{item.targetPrice}</b>
-            </div>
-
-            <div className="wish-row">
-              <span>3개월 최저가</span>
-              <b className="lowest">{item.lowestPrice}</b>
-            </div>
-
-            <button className="wish-buy">구매하기</button>
-
-            {item.stockAlert && (
-              <div className="wish-alert">{item.stockAlert}</div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </>
   );

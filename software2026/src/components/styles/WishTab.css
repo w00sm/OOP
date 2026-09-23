@@ -122,6 +122,10 @@
 }
 
 .wish-row .target {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  grid-column: 2 / 4;
   color: #2563eb;
   font-size: 14px;
   text-align: right;
@@ -135,9 +139,25 @@
   font-weight: 700;
 }
 
-.wish-buy {
-  width: 100%;
+.wish-actions {
+  display: flex;
+  gap: 8px;
   margin-top: 8px;
+}
+
+.wish-remove {
+  padding: 14px 16px;
+  border: 1px solid #e1e7e3;
+  border-radius: 8px;
+  background: white;
+  color: #6f7b78;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wish-buy {
+  flex: 1;
+  display: block;
   padding: 14px;
   border: 0;
   border-radius: 8px;
@@ -145,6 +165,8 @@
   color: #071426;
   font-size: 15px;
   font-weight: 800;
+  text-align: center;
+  text-decoration: none;
 }
 
 .wish-alert {
@@ -155,4 +177,50 @@
   background: #fffdf0;
   color: #b45309;
   font-size: 13px;
+}
+.wish-row .target-input {
+  grid-column: 2 / 4;
+  justify-self: end;
+  width: 120px;
+  padding: 6px 8px;
+  border: 1px solid #2563eb;
+  border-radius: 8px;
+  color: #071426;
+  font-size: 14px;
+  text-align: right;
+  outline: none;
+}
+
+.wish-row .lowest {
+  grid-column: 2 / 4;
+}
+
+.wish-badges {
+  display: flex;
+  gap: 6px;
+  margin: -8px 0 12px;
+}
+
+.wish-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.wish-badge.target {
+  background: #2563eb;
+}
+
+.wish-badge.lowest {
+  background: #10b956;
+}
+
+.wish-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: #6f7b78;
+  font-size: 14px;
+  line-height: 1.6;
 }

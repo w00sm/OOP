@@ -6,6 +6,7 @@ import SearchTab from "./pages/SearchTab";
 import RecommendTab from "./pages/RecommendTab";
 import WishTab from "./pages/WishTab";
 import MyPageTab from "./pages/MyPageTab";
+import { useWishlist } from "../hooks/useWishlist";
 
 export type Tab = "홈" | "검색" | "추천" | "찜" | "마이페이지";
 export type TimeCategory = "아침" | "점심" | "저녁";
@@ -30,6 +31,8 @@ export type NotificationItem = {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
   const [openNotification, setOpenNotification] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const wishlist = useWishlist();
 
   const [supplements, setSupplements] = useState<Supplement[]>(() => {
     const saved = localStorage.getItem("supplements");
@@ -114,6 +117,12 @@ export default function Home() {
     setOpenNotification(true);
   };
 
+  // 추천탭에서 성분을 누르면 그 성분으로 검색탭을 엽니다.
+  const goToSearch = (keyword: string) => {
+    setSearchKeyword(keyword);
+    setActiveTab("검색");
+  };
+
   return (
     <div className="container">
       {activeTab === "홈" && (
@@ -126,16 +135,23 @@ export default function Home() {
 
       {activeTab === "검색" && (
         <SearchTab
-          supplements={supplements}
+          keyword={searchKeyword}
+          onKeywordChange={setSearchKeyword}
+          wishlist={wishlist}
           onOpenNotification={openAlarmPage}
         />
       )}
 
       {activeTab === "추천" && (
-        <RecommendTab onOpenNotification={openAlarmPage} />
+        <RecommendTab
+          onOpenNotification={openAlarmPage}
+          onSearch={goToSearch}
+        />
       )}
 
-      {activeTab === "찜" && <WishTab onOpenNotification={openAlarmPage} />}
+      {activeTab === "찜" && (
+        <WishTab wishlist={wishlist} onOpenNotification={openAlarmPage} />
+      )}
 
       {activeTab === "마이페이지" && (
         <MyPageTab
