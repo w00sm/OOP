@@ -8,6 +8,7 @@ import RecommendTab from "./pages/RecommendTab";
 import WishTab from "./pages/WishTab";
 import MyPageTab from "./pages/MyPageTab";
 import { useWishlist } from "../hooks/useWishlist";
+import InstallBanner from "./InstallBanner";
 
 export type Tab = "홈" | "검색" | "추천" | "찜" | "마이페이지";
 export type TimeCategory = "아침" | "점심" | "저녁";
@@ -133,6 +134,8 @@ export default function Home() {
 
   return (
     <div className="container">
+      {activeTab === "홈" && <InstallBanner />}
+
       {activeTab === "홈" && (
         <HomeTab
           supplements={supplements}

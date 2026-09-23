@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fit Vita 마스커블 아이콘 (안드로이드가 원·물방울 등으로 잘라도 글자가 안전 영역 안에 들어가도록 여백을 둠) -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C8F27D"/>
+      <stop offset="0.5" stop-color="#5DCB6A"/>
+      <stop offset="1" stop-color="#16945A"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="0.25" cy="0.15" r="0.7">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <rect width="512" height="512" fill="url(#shine)"/>
+  <g id="mark" transform="translate(256 256) scale(0.74) translate(-256 -256) translate(-14 8)">
+    <g fill="none" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M126 368 V156 H226 M126 256 H208"/>
+      <path d="M276 156 L334 368 L392 156"/>
+    </g>
+    <!-- 잎사귀 포인트 -->
+    <path d="M392 156 C392 112 420 86 462 82 C462 124 436 152 392 156 Z" fill="#FFFFFF" opacity="0.92"/>
+    <path d="M396 150 L440 104" stroke="#5DCB6A" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>
