@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import type { NotificationItem } from "../Home";
+import { useState } from "react";
+import GoogleLoginButton from "../GoogleLoginButton";
 import "../styles/MyPageTab.css";
 
-type MyPageView = "main" | "info" | "alarm" | "notice" | "notification";
+type MyPageView = "main" | "info" | "alarm" | "notice";
 
 type Notice = {
   id: number;
@@ -11,22 +11,37 @@ type Notice = {
   content: string;
 };
 
-type MyPageTabProps = {
-  notifications: NotificationItem[];
-  openNotification: boolean;
-  setOpenNotification: React.Dispatch<React.SetStateAction<boolean>>;
+type LoginUser = {
+  name: string;
+  email: string;
+  picture?: string;
 };
 
-export default function MyPageTab({
-  notifications,
-  openNotification,
-  setOpenNotification,
-}: MyPageTabProps) {
+type MyPageTabProps = {
+  onOpenNotification: () => void;
+};
+
+export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
   const currentYear = new Date().getFullYear();
 
   const [myPageView, setMyPageView] = useState<MyPageView>("main");
-  const [profileName, setProfileName] = useState("");
-  const [profileEmail, setProfileEmail] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+
+  const [loginUser, setLoginUser] = useState<LoginUser | null>(() => {
+    const saved = localStorage.getItem("loginUser");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [profileName, setProfileName] = useState(() => {
+    const saved = localStorage.getItem("loginUser");
+    return saved ? JSON.parse(saved).name : "";
+  });
+
+  const [profileEmail, setProfileEmail] = useState(() => {
+    const saved = localStorage.getItem("loginUser");
+    return saved ? JSON.parse(saved).email : "";
+  });
+
   const [profileGender, setProfileGender] = useState<"남성" | "여성">("남성");
   const [profileBirthYear, setProfileBirthYear] = useState("1990");
 
@@ -35,15 +50,33 @@ export default function MyPageTab({
   const [pushAlarm, setPushAlarm] = useState(true);
   const [nightPushAlarm, setNightPushAlarm] = useState(false);
 
-  useEffect(() => {
-    if (openNotification) {
-      setMyPageView("notification");
-    }
-  }, [openNotification]);
-
   const goMain = () => {
     setMyPageView("main");
-    setOpenNotification(false);
+  };
+
+  const handleGoogleLogin = (user: LoginUser) => {
+    setLoginUser(user);
+    setProfileName(user.name);
+    setProfileEmail(user.email);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("loginUser");
+    setLoginUser(null);
+    setProfileName("");
+    setProfileEmail("");
+  };
+
+  const handleSaveProfile = () => {
+    const profile = {
+      name: profileName,
+      email: profileEmail,
+      gender: profileGender,
+      birthYear: profileBirthYear,
+    };
+
+    localStorage.setItem("userHealthProfile", JSON.stringify(profile));
+    setModalMessage("내 정보가 저장되었습니다.");
   };
 
   const notices: Notice[] = [
@@ -81,7 +114,8 @@ export default function MyPageTab({
       id: 6,
       title: "서비스 점검 안내",
       date: "2026.03.15",
-      content: "3월 16일 새벽 2시~4시 서비스 점검이 진행됩니다. 이용에 참고 부탁드립니다.",
+      content:
+        "3월 16일 새벽 2시~4시 서비스 점검이 진행됩니다. 이용에 참고 부탁드립니다.",
     },
   ];
 
@@ -94,21 +128,37 @@ export default function MyPageTab({
             <button
               type="button"
               className="mypage-bell-button"
-              onClick={() => setMyPageView("notification")}
+              onClick={onOpenNotification}
             >
               ♧
             </button>
           </div>
 
-          <div className="mypage-profile-card">
-            <div className="mypage-profile-icon">👤</div>
-            <div>
-              <div className="mypage-profile-name">
-                {profileName || "사용자님"}
+          {loginUser ? (
+            <div className="mypage-profile-card">
+              {loginUser.picture ? (
+                <img
+                  src={loginUser.picture}
+                  alt="프로필"
+                  className="mypage-profile-image"
+                />
+              ) : (
+                <div className="mypage-profile-icon">👤</div>
+              )}
+
+              <div>
+                <div className="mypage-profile-name">{loginUser.name}님</div>
+                <div className="mypage-profile-desc">
+                  건강한 하루 되세요!
+                </div>
               </div>
-              <div className="mypage-profile-desc">건강한 하루 되세요!</div>
             </div>
-          </div>
+          ) : (
+            <div className="mypage-login-card">
+              <p>로그인 후 마이페이지를 이용할 수 있어요.</p>
+              <GoogleLoginButton onLogin={handleGoogleLogin} />
+            </div>
+          )}
 
           <div className="mypage-menu-list">
             <button
@@ -148,9 +198,15 @@ export default function MyPageTab({
             </button>
           </div>
 
-          <button type="button" className="mypage-logout">
-            ↪ 로그아웃
-          </button>
+          {loginUser && (
+            <button
+              type="button"
+              className="mypage-logout"
+              onClick={handleLogout}
+            >
+              ↪ 로그아웃
+            </button>
+          )}
         </>
       )}
 
@@ -218,7 +274,11 @@ export default function MyPageTab({
             </select>
           </div>
 
-          <button type="button" className="mypage-save-button">
+          <button
+            type="button"
+            className="mypage-save-button"
+            onClick={handleSaveProfile}
+          >
             저장하기
           </button>
         </>
@@ -314,30 +374,15 @@ export default function MyPageTab({
         </>
       )}
 
-      {myPageView === "notification" && (
-        <>
-          <div className="mypage-sub-header">
-            <button type="button" className="mypage-back" onClick={goMain}>
-              ‹
+      {modalMessage && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal-card">
+            <p>{modalMessage}</p>
+            <button type="button" onClick={() => setModalMessage("")}>
+              닫기
             </button>
-            <h1>알림</h1>
           </div>
-
-          <div className="notification-list">
-            {notifications.map((item) => (
-              <div
-                className={`notification-card ${item.active ? "active" : ""}`}
-                key={item.id}
-              >
-                <div className="notification-top">
-                  <h2>{item.title}</h2>
-                  <span>{item.time}</span>
-                </div>
-                <p>{item.content}</p>
-              </div>
-            ))}
-          </div>
-        </>
+        </div>
       )}
     </div>
   );

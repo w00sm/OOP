@@ -30,7 +30,7 @@ export type NotificationItem = {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("홈");
-  const [openNotification, setOpenNotification] = useState(false);
+  const [showNotificationPage, setShowNotificationPage] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const wishlist = useWishlist();
 
@@ -113,8 +113,7 @@ export default function Home() {
   ];
 
   const openAlarmPage = () => {
-    setActiveTab("마이페이지");
-    setOpenNotification(true);
+    setShowNotificationPage(true);
   };
 
   // 추천탭에서 성분을 누르면 그 성분으로 검색탭을 엽니다.
@@ -154,11 +153,52 @@ export default function Home() {
       )}
 
       {activeTab === "마이페이지" && (
-        <MyPageTab
-          notifications={notifications}
-          openNotification={openNotification}
-          setOpenNotification={setOpenNotification}
-        />
+        <MyPageTab onOpenNotification={openAlarmPage} />
+      )}
+
+      {showNotificationPage && (
+        <div
+          className="notification-page"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "100%",
+            maxWidth: 390,
+            height: "100vh",
+            zIndex: 99999,
+            background: "#f7faf7",
+            padding: "24px 20px 96px",
+            overflowY: "auto",
+          }}
+        >
+          <div className="mypage-sub-header">
+            <button
+              type="button"
+              className="mypage-back"
+              onClick={() => setShowNotificationPage(false)}
+            >
+              ‹
+            </button>
+            <h1>알림</h1>
+          </div>
+
+          <div className="notification-list">
+            {notifications.map((item) => (
+              <div
+                className={`notification-card ${item.active ? "active" : ""}`}
+                key={item.id}
+              >
+                <div className="notification-top">
+                  <h2>{item.title}</h2>
+                  <span>{item.time}</span>
+                </div>
+                <p>{item.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="bottom-nav">
@@ -166,50 +206,55 @@ export default function Home() {
           className={activeTab === "홈" ? "active" : ""}
           onClick={() => {
             setActiveTab("홈");
-            setOpenNotification(false);
+            setShowNotificationPage(false);
           }}
         >
-          홈
+          <span className="nav-icon">⌂</span>
+          <span>홈</span>
         </button>
 
         <button
           className={activeTab === "검색" ? "active" : ""}
           onClick={() => {
             setActiveTab("검색");
-            setOpenNotification(false);
+            setShowNotificationPage(false);
           }}
         >
-          검색
+          <span className="nav-icon">⌕</span>
+          <span>검색</span>
         </button>
 
         <button
           className={activeTab === "추천" ? "active" : ""}
           onClick={() => {
             setActiveTab("추천");
-            setOpenNotification(false);
+            setShowNotificationPage(false);
           }}
         >
-          추천
+          <span className="nav-icon">♧</span>
+          <span>추천</span>
         </button>
 
         <button
           className={activeTab === "찜" ? "active" : ""}
           onClick={() => {
             setActiveTab("찜");
-            setOpenNotification(false);
+            setShowNotificationPage(false);
           }}
         >
-          찜
+          <span className="nav-icon">♡</span>
+          <span>찜</span>
         </button>
 
         <button
           className={activeTab === "마이페이지" ? "active" : ""}
           onClick={() => {
             setActiveTab("마이페이지");
-            setOpenNotification(false);
+            setShowNotificationPage(false);
           }}
         >
-          마이페이지
+          <span className="nav-icon">♙</span>
+          <span>마이페이지</span>
         </button>
       </div>
     </div>
