@@ -71,7 +71,7 @@ function write(key: string, value: unknown) {
 }
 
 // 화면(알림 목록, 설정)이 바뀐 내용을 다시 읽도록 알립니다.
-function emitChange() {
+export function emitChange() {
   window.dispatchEvent(new Event(CHANGE_EVENT));
 }
 
@@ -141,6 +141,11 @@ const todayKey = () => {
 function alreadySent(dedupeKey: string) {
   const sent = read<Record<string, string[]>>(SENT_KEY, {});
   return sent[todayKey()]?.includes(dedupeKey) ?? false;
+}
+
+export function getSentKeysToday(): string[] {
+  const sent = read<Record<string, string[]>>(SENT_KEY, {});
+  return sent[todayKey()] ?? [];
 }
 
 function markSent(dedupeKey: string) {

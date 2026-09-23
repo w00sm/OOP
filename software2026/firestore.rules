@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// 각 사용자는 자기 문서(users/{익명 로그인 uid})만 읽고 쓸 수 있습니다.
+// GitHub Actions의 발송 스크립트는 서비스 계정(관리자 권한)으로 접근하므로 이 규칙과 무관합니다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

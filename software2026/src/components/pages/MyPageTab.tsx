@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NotificationBell from "../NotificationBell";
 import {
   Bell,
@@ -15,6 +15,21 @@ import {
   updateSettings,
   type NotificationSettings,
 } from "../../services/notificationService";
+import {
+  disableServerPush,
+  enableServerPush,
+  getPushStatus,
+  type PushStatus,
+} from "../../services/pushService";
+
+const PUSH_STATUS_TEXT: Record<PushStatus, string> = {
+  "not-configured": "Firebase 설정값(firebaseConfig·VAPID 키)을 넣으면 사용할 수 있어요.",
+  "dev-mode": "개발 모드(npm run dev)에서는 사용할 수 없어요. 배포 주소에서 켜 주세요.",
+  unsupported: "이 브라우저는 푸시를 지원하지 않아요. 아이폰은 홈 화면에 추가한 앱에서 켜 주세요.",
+  denied: "알림이 차단되어 있어요. 브라우저 설정에서 알림을 허용해 주세요.",
+  off: "앱을 완전히 종료해도 복용·가격·재구매 알림을 받아요. (최대 5~15분 늦을 수 있어요)",
+  on: "켜져 있어요. 앱을 종료해도 서버가 알림을 보내드려요.",
+};
 import "../styles/MyPageTab.css";
 
 type MyPageView = "main" | "info" | "alarm" | "notice";
@@ -61,6 +76,33 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
   const [profileBirthYear, setProfileBirthYear] = useState("1990");
 
   const { settings, permission } = useNotifications();
+  const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getPushStatus().then((status) => {
+      if (!cancelled) setPushStatus(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [permission]);
+
+  const toggleServerPush = async () => {
+    if (pushBusy || !pushStatus) return;
+    setPushBusy(true);
+    try {
+      setPushStatus(
+        pushStatus === "on" ? await disableServerPush() : await enableServerPush()
+      );
+    } catch (error) {
+      console.error("서버 푸시 설정 오류:", error);
+      setModalMessage("푸시 설정에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const toggleSetting = (key: keyof NotificationSettings) => {
     updateSettings({ [key]: !settings[key] });
@@ -378,6 +420,22 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
                 허용하기
               </button>
             )}
+          </div>
+
+          <div className="alarm-card server-push-card">
+            <div>
+              <h2>앱이 꺼져 있어도 알림 받기</h2>
+              <p>{pushStatus ? PUSH_STATUS_TEXT[pushStatus] : "확인 중..."}</p>
+            </div>
+            <button
+              type="button"
+              aria-label={`서버 푸시 ${pushStatus === "on" ? "끄기" : "켜기"}`}
+              className={`switch ${pushStatus === "on" ? "on" : ""}`}
+              disabled={pushBusy || (pushStatus !== "on" && pushStatus !== "off")}
+              onClick={toggleServerPush}
+            >
+              <span></span>
+            </button>
           </div>
 
           {alarmItems.map((item) => (

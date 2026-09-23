@@ -10,6 +10,7 @@ import MyPageTab from "./pages/MyPageTab";
 import { useWishlist } from "../hooks/useWishlist";
 import InstallBanner from "./InstallBanner";
 import { useAlertScheduler } from "../hooks/useAlertScheduler";
+import { useCloudSync } from "../hooks/useCloudSync";
 import { useNotifications } from "../hooks/useNotifications";
 import { clearHistory, markAllRead, timeAgo } from "../services/notificationService";
 
@@ -76,6 +77,7 @@ export default function Home() {
 
   const { history: notifications } = useNotifications();
   useAlertScheduler(supplements, wishlist.wishlist);
+  useCloudSync(supplements, wishlist.wishlist);
 
   const openAlarmPage = () => {
     setShowNotificationPage(true);

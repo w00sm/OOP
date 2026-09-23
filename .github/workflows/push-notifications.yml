@@ -1,0 +1,59 @@
+# 서버 푸시 알림 발송 (Fit Vita)
+# 5분마다 Firestore를 확인해 복용·재구매·가격 알림을 FCM으로 보냅니다. (software2026/scripts/send-push.ts)
+#
+# 준비: 저장소 Settings → Secrets and variables → Actions → New repository secret
+#       이름 FIREBASE_SERVICE_ACCOUNT, 값: Firebase 서비스 계정 키 JSON 파일 내용 전체
+# 주의: 예약 실행(schedule)은 기본 브랜치(main)에 이 파일이 있어야 동작하고,
+#       GitHub 사정에 따라 5~15분 늦게 실행될 수 있습니다.
+
+name: 서버 푸시 알림 발송
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "실제로 보내지 않고 보낼 내용만 확인"
+        type: boolean
+        default: false
+
+# 이전 실행이 끝나기 전에 다음 실행이 겹치지 않게
+concurrency:
+  group: push-notifications
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    defaults:
+      run:
+        working-directory: software2026
+    steps:
+      - name: 서비스 계정 키 확인
+        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        working-directory: .
+        run: echo "FIREBASE_SERVICE_ACCOUNT 시크릿이 없어 발송을 건너뜁니다."
+
+      - uses: actions/checkout@v4
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+
+      - uses: actions/setup-node@v4
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: software2026/package-lock.json
+
+      - name: 패키지 설치
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        run: npm ci --no-audit --no-fund
+
+      - name: 푸시 발송
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        run: npm run push:send
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}

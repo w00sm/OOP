@@ -4,6 +4,7 @@
 
 import type { Supplement, TimeCategory } from "../components/Home";
 import { josa } from "../utils/josa";
+import { daysLeftOf } from "./alertRules";
 import {
   DEFAULT_TIMES,
   INGREDIENT_RULES,
@@ -129,8 +130,4 @@ export function findScheduleConflicts(
 }
 
 // 남은 양으로 며칠 더 먹을 수 있는지 (정보가 없으면 null)
-export function daysLeft(supplement: Supplement) {
-  if (supplement.stock === undefined || supplement.stock === null) return null;
-  const perDay = supplement.dailyDose && supplement.dailyDose > 0 ? supplement.dailyDose : 1;
-  return Math.floor(supplement.stock / perDay);
-}
+export const daysLeft = (supplement: Supplement) => daysLeftOf(supplement);

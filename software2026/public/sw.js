@@ -4,7 +4,7 @@
 // - 알림을 누르면 열려 있는 앱 창으로 이동하거나 새로 엽니다.
 // - 서버 푸시(FCM)를 붙일 때 push 이벤트 처리도 이 파일에 추가합니다.
 
-const CACHE_NAME = "fitvita-v2";
+const CACHE_NAME = "fitvita-v3";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -59,6 +59,26 @@ self.addEventListener("fetch", (event) => {
       )
     );
   }
+});
+
+// 서버 푸시(FCM) 수신: GitHub Actions의 scripts/send-push.ts가 보낸 data 메시지를 알림으로 표시
+// tag가 같으면 앱이 이미 띄운 알림과 합쳐져서 두 번 울리지 않습니다.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data?.json()?.data ?? {};
+  } catch {
+    data = { title: "Fit Vita", body: event.data?.text() ?? "" };
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Fit Vita", {
+      body: data.body || "",
+      tag: data.tag || undefined,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: "/" },
+    })
+  );
 });
 
 // 알림을 누르면 앱으로 이동
