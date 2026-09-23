@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Bell, Heart, Search, Sparkles, X } from "lucide-react";
 import type { Wishlist } from "../../hooks/useWishlist";
 import {
@@ -14,7 +14,7 @@ import {
 import "../styles/SearchTab.css";
 
 type SearchTabProps = {
-  keyword: string;
+  keyword: string; // 실제로 검색한 검색어
   onKeywordChange: (keyword: string) => void;
   recommendedIngredients: string[]; // 추천탭에서 넘어온 추천 성분
   onClearRecommended: () => void;
@@ -38,6 +38,20 @@ export default function SearchTab({
   const [sort, setSort] = useState<SortOption>("sim");
   const [results, setResults] = useState<Product[]>([]);
   const [selectedIngredient, setSelectedIngredient] = useState("");
+  // 입력창에 적는 중인 글자. 돋보기나 Enter를 눌러야 검색어(keyword)로 반영됩니다.
+  const [inputValue, setInputValue] = useState(keyword);
+
+  const runSearch = (value: string) => {
+    setInputValue(value);
+    onKeywordChange(value.trim());
+  };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    runSearch(inputValue);
+    // 모바일에서 검색 후 키보드를 닫습니다.
+    (document.activeElement as HTMLElement | null)?.blur();
+  };
 
   const hasKeyword = keyword.trim() !== "";
   const isRecommendMode = !hasKeyword && recommendedIngredients.length > 0;
@@ -83,26 +97,29 @@ export default function SearchTab({
       </div>
 
       <div className="search-section">
-        <div className="search-input-wrap">
-          <Search size={18} className="search-input-icon" />
+        <form className="search-input-wrap" role="search" onSubmit={handleSubmit}>
+          <button type="submit" className="search-submit" aria-label="검색">
+            <Search size={18} />
+          </button>
           <input
             type="text"
-            placeholder="제품명, 성분, 고민으로 검색"
-            value={keyword}
-            onChange={(e) => onKeywordChange(e.target.value)}
+            enterKeyHint="search"
+            placeholder="영양제 이름, 성분, 고민으로 검색"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             className="search-input"
           />
-          {hasKeyword && (
+          {inputValue !== "" && (
             <button
               type="button"
               className="search-clear"
               aria-label="검색어 지우기"
-              onClick={() => onKeywordChange("")}
+              onClick={() => runSearch("")}
             >
               <X size={16} />
             </button>
           )}
-        </div>
+        </form>
 
         {isRecommendMode && (
           <div className="recommend-banner">
@@ -150,7 +167,7 @@ export default function SearchTab({
                   type="button"
                   key={item}
                   className="keyword-chip"
-                  onClick={() => onKeywordChange(item)}
+                  onClick={() => runSearch(item)}
                 >
                   #{item}
                 </button>
