@@ -7,15 +7,17 @@
 // - VAPID_KEY: 프로젝트 설정 → 클라우드 메시징 → 웹 구성 → 웹 푸시 인증서 → 키 쌍
 
 export const firebaseConfig = {
-  apiKey: "",
+  apiKey: "AIzaSyDNMiZD74aDei-z19FQqHXVArbw9gmU9j0",
   authDomain: "fit-vita-e9160.firebaseapp.com",
   projectId: "fit-vita-e9160",
   storageBucket: "fit-vita-e9160.firebasestorage.app",
-  messagingSenderId: "",
-  appId: "",
+  messagingSenderId: "669654006711",
+  appId: "1:669654006711:web:b2ff2013ad119c82910632",
+  measurementId: "G-BZ3EDQNCR6",
 };
 
-export const VAPID_KEY = "";
+export const VAPID_KEY =
+  "BGjXe6OUua2EYWuu0ek6bA8TH75b-vQBhF4Tkq9TNOr9g11Ku8Md74domFcEQnGKKU2EU4b_5m6EXoNHMG46C1A";
 
 // 값이 비어 있으면 서버 푸시 기능만 꺼지고, 나머지 앱은 그대로 동작합니다.
 export const isFirebaseConfigured = Boolean(
