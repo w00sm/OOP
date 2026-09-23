@@ -310,3 +310,68 @@
   font-size: 12px;
   line-height: 1.45;
 }
+
+.mypage-login-card {
+  margin-bottom: 26px;
+  padding: 22px 20px;
+  border-radius: 12px;
+  background: #f6fbef;
+  border: 1px solid #d9eec5;
+  text-align: center;
+}
+
+.mypage-login-card p {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: #667085;
+}
+
+.google-login-wrap {
+  display: flex;
+  justify-content: center;
+}MyPageTab.tsx
+
+.mypage-profile-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.custom-modal-card {
+  width: 100%;
+  max-width: 340px;
+  background: white;
+  border-radius: 28px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+}
+
+.custom-modal-card p {
+  margin: 0 0 22px;
+  color: #071426;
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.custom-modal-card button {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 0;
+  background: #8bcf3f;
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+}

@@ -22,7 +22,7 @@ button:active {
   max-width: 390px;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 24px 20px 96px;
+  padding: 24px 20px 118px;
   background: #f7faf7;
   color: #071426;
 }
@@ -65,20 +65,33 @@ button:active {
   max-width: 390px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  padding: 10px 10px 18px;
-  background: rgba(255, 255, 255, 0.94);
+  padding: 8px 8px 12px;
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(16px);
   border-top: 1px solid #e1e7e3;
 }
 
 .bottom-nav button {
+  min-height: 50px;
   border: 0;
+  border-radius: 14px;
   background: transparent;
   color: #9aa3a0;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.bottom-nav .nav-icon {
+  font-size: 22px;
+  line-height: 1;
 }
 
 .bottom-nav button.active {
   color: #8bcf3f;
+  background: #f6fbef;
 }

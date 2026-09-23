@@ -1,5 +1,5 @@
 .recommend-page {
-  padding-bottom: 90px;
+  padding-bottom: 0;
 }
 
 .load-info-button {
@@ -104,5 +104,123 @@
   background: #9bd84f;
   color: white;
   font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 0;
+}
+
+.custom-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.custom-modal-card {
+  width: 100%;
+  max-width: 340px;
+  background: white;
+  border-radius: 28px;
+  padding: 28px 24px 22px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+}
+
+.custom-modal-card p {
+  margin: 0 0 22px;
+  color: #071426;
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.custom-modal-card button {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 0;
+  background: #8bcf3f;
+  color: white;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.ai-chat-box {
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-right: 4px;
+}
+
+.ai-chat-box::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ai-chat-box::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+.ai-chat-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-message.user {
+  align-self: flex-end;
+  background: #9bd84f;
+  color: #071426;
+}
+
+.ai-message.assistant {
+  align-self: flex-start;
+}
+
+.consult-complete-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px;
+  border: 0;
+  border-radius: 12px;
+  background: #071426;
+  color: white;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.recommend-result-box {
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #d9eec5;
+}
+
+.recommend-result-box h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.recommend-result-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #edf0ee;
+  font-size: 14px;
+}
+
+.recommend-result-item span {
+  color: #071426;
+  font-weight: 700;
+}
+
+.recommend-result-item strong {
+  color: #8bcf3f;
   font-weight: 800;
 }
