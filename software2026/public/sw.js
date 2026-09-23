@@ -1,9 +1,10 @@
 // Fit Vita 서비스워커
 // - 앱 화면(HTML)은 항상 네트워크에서 먼저 받고, 오프라인이면 저장해 둔 화면을 보여줍니다.
 // - 빌드된 JS·CSS·아이콘은 한 번 받으면 저장해 두고 재사용합니다. (파일명에 해시가 붙어 바뀌면 새로 받음)
-// - 4단계에서 푸시 알림(FCM) 처리도 이 파일 또는 별도 서비스워커에 추가합니다.
+// - 알림을 누르면 열려 있는 앱 창으로 이동하거나 새로 엽니다.
+// - 서버 푸시(FCM)를 붙일 때 push 이벤트 처리도 이 파일에 추가합니다.
 
-const CACHE_NAME = "fitvita-v1";
+const CACHE_NAME = "fitvita-v2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -58,4 +59,16 @@ self.addEventListener("fetch", (event) => {
       )
     );
   }
+});
+
+// 알림을 누르면 앱으로 이동
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const client = clients.find((item) => item.url.startsWith(self.location.origin));
+      if (client) return client.focus();
+      return self.clients.openWindow("/");
+    })
+  );
 });

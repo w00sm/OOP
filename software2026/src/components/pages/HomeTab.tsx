@@ -1,8 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell } from "lucide-react";
+import { Lightbulb, Package, Trash2, TriangleAlert, X } from "lucide-react";
+import NotificationBell from "../NotificationBell";
 import type { Dispatch, SetStateAction } from "react";
 import { getOpenAI } from "../../services/openaiClient";
 import type { Supplement, TimeCategory } from "../Home";
+import {
+  daysLeft,
+  findScheduleConflicts,
+  suggestSchedule,
+  timeToCategory,
+} from "../../services/scheduleService";
+import { josa } from "../../utils/josa";
 import "../styles/HomeTab.css";
 
 type HomeTabProps = {
@@ -45,6 +53,10 @@ export default function HomeTab({
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [newStock, setNewStock] = useState("");
+  const [newDailyDose, setNewDailyDose] = useState("1");
+  const [scheduleNotice, setScheduleNotice] = useState<{ title: string; reasons: string[] } | null>(null);
+  const [editingTimeId, setEditingTimeId] = useState<number | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const [storageTips, setStorageTips] = useState<StorageTip[]>([]);
@@ -98,73 +110,69 @@ export default function HomeTab({
     localStorage.setItem("dailySupplementRecords", JSON.stringify(dailyRecords));
   }, [dailyRecords]);
 
-  const getTimeCategory = (name: string): TimeCategory => {
-    const lower = name.toLowerCase();
-
-    if (
-      lower.includes("종합비타민") ||
-      lower.includes("비타민") ||
-      lower.includes("오메가")
-    ) {
-      return "아침";
-    }
-
-    if (
-      lower.includes("철분") ||
-      lower.includes("아연") ||
-      lower.includes("루테인")
-    ) {
-      return "점심";
-    }
-
-    if (
-      lower.includes("마그네슘") ||
-      lower.includes("칼슘") ||
-      lower.includes("유산균") ||
-      lower.includes("프로바이오틱스")
-    ) {
-      return "저녁";
-    }
-
-    return "아침";
-  };
-
-  const getDefaultTime = (category: TimeCategory) => {
-    if (category === "아침") return "08:00";
-    if (category === "점심") return "13:00";
-    return "22:00";
-  };
-
   const addSupplement = () => {
     if (!newName.trim() || !newDesc.trim()) return;
 
-    const category = getTimeCategory(newName);
+    // 이미 등록된 영양제와의 상호작용을 따져 복용 시간을 자동으로 정합니다.
+    const schedule = suggestSchedule(newName, supplements);
+    const stock = Number(newStock);
+    const dailyDose = Number(newDailyDose);
 
     const newItem: Supplement = {
       id: Date.now(),
-      name: newName,
-      desc: newDesc,
-      time: getDefaultTime(category),
-      timeCategory: category,
+      name: newName.trim(),
+      desc: newDesc.trim(),
+      time: schedule.time,
+      timeCategory: schedule.timeCategory,
       checked: false,
+      stock: newStock.trim() !== "" && stock >= 0 ? stock : undefined,
+      dailyDose: dailyDose > 0 ? dailyDose : 1,
     };
 
     setSupplements((prev) => [...prev, newItem]);
+    setScheduleNotice({
+      title: `${josa(newItem.name, "을/를")} ${schedule.timeCategory} ${schedule.time}에 배정했어요`,
+      reasons: schedule.reasons,
+    });
     setNewName("");
     setNewDesc("");
+    setNewStock("");
+    setNewDailyDose("1");
     setShowAddForm(false);
     setHomeView("일정");
-    setSelectedTime(category);
+    setSelectedTime(schedule.timeCategory);
     setStorageTips([]);
     setStorageMessage("");
   };
 
+  // 복용 체크 시 남은 수량을 하루 복용량만큼 줄이고, 체크 해제하면 되돌립니다.
   const toggleCheck = (id: number) => {
     setSupplements((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const checked = !item.checked;
+        const dose = item.dailyDose ?? 1;
+        const stock =
+          item.stock === undefined
+            ? undefined
+            : Math.max(0, item.stock + (checked ? -dose : dose));
+        return { ...item, checked, stock };
+      })
+    );
+  };
+
+  const changeTime = (id: number, time: string) => {
+    if (!time) return;
+    setSupplements((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, checked: !item.checked } : item
+        item.id === id ? { ...item, time, timeCategory: timeToCategory(time) } : item
       )
     );
+    setSelectedTime(timeToCategory(time));
+  };
+
+  const removeSupplement = (id: number) => {
+    setSupplements((prev) => prev.filter((item) => item.id !== id));
   };
 
   const loadStorageTips = async () => {
@@ -218,9 +226,11 @@ export default function HomeTab({
   const completed = supplements.filter((item) => item.checked).length;
   const remaining = total - completed;
 
-  const filteredSupplements = supplements.filter(
-    (item) => item.timeCategory === selectedTime
-  );
+  const filteredSupplements = supplements
+    .filter((item) => item.timeCategory === selectedTime)
+    .sort((a, b) => a.time.localeCompare(b.time));
+
+  const conflicts = findScheduleConflicts(supplements);
 
   const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
 
@@ -249,14 +259,7 @@ export default function HomeTab({
           <p>효과적인 영양제 복용을 위한 맞춤 스케줄</p>
         </div>
 
-        <button
-          type="button"
-          className="top-bell-button"
-          aria-label="알림"
-          onClick={onOpenNotification}
-        >
-          <Bell size={22} strokeWidth={2} />
-        </button>
+        <NotificationBell onClick={onOpenNotification} />
       </div>
 
       <div className="summary">
@@ -298,10 +301,57 @@ export default function HomeTab({
           <input
             value={newDesc}
             onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="복용 방법 예: 1정"
+            placeholder="복용 방법 예: 1정 · 식후"
           />
 
+          <div className="add-form-row">
+            <label>
+              남은 개수
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={newStock}
+                onChange={(e) => setNewStock(e.target.value)}
+                placeholder="예: 60"
+              />
+            </label>
+            <label>
+              하루 복용 개수
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                value={newDailyDose}
+                onChange={(e) => setNewDailyDose(e.target.value)}
+              />
+            </label>
+          </div>
+          <p className="add-form-hint">
+            복용 시간은 함께 먹는 영양제와의 궁합을 따져 자동으로 정해져요.
+            남은 개수를 입력하면 7일분 이하일 때 재구매 알림을 보내드려요.
+          </p>
+
           <button onClick={addSupplement}>추가하기</button>
+        </div>
+      )}
+
+      {scheduleNotice && (
+        <div className="schedule-notice">
+          <Lightbulb size={18} className="schedule-notice-icon" />
+          <div>
+            <strong>{scheduleNotice.title}</strong>
+            {scheduleNotice.reasons.map((reason) => (
+              <p key={reason}>{reason}</p>
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-label="닫기"
+            onClick={() => setScheduleNotice(null)}
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 
@@ -341,26 +391,83 @@ export default function HomeTab({
               이 시간대에 등록된 영양제가 없습니다.
             </div>
           ) : (
-            filteredSupplements.map((item) => (
-              <div className="card" key={item.id}>
-                <div className="card-top">
-                  <button
-                    type="button"
-                    className={`circle ${item.checked ? "checked" : ""}`}
-                    onClick={() => toggleCheck(item.id)}
-                  />
+            filteredSupplements.map((item) => {
+              const conflict = conflicts.get(item.id);
+              const left = daysLeft(item);
 
-                  <div>
-                    <div className={`name ${item.checked ? "done" : ""}`}>
-                      {item.name}
+              return (
+                <div className="card" key={item.id}>
+                  <div className="card-top">
+                    <button
+                      type="button"
+                      className={`circle ${item.checked ? "checked" : ""}`}
+                      aria-label={item.checked ? "복용 취소" : "복용 완료"}
+                      onClick={() => toggleCheck(item.id)}
+                    />
+
+                    <div>
+                      <div className={`name ${item.checked ? "done" : ""}`}>
+                        {item.name}
+                      </div>
+                      <div className="desc">{item.desc}</div>
                     </div>
-                    <div className="desc">{item.desc}</div>
+
+                    {editingTimeId === item.id ? (
+                      <input
+                        type="time"
+                        className="time time-input"
+                        autoFocus
+                        defaultValue={item.time}
+                        onBlur={(e) => {
+                          changeTime(item.id, e.target.value);
+                          setEditingTimeId(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="time"
+                        aria-label="복용 시간 변경"
+                        onClick={() => setEditingTimeId(item.id)}
+                      >
+                        {item.time}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="card-remove"
+                      aria-label={`${item.name} 삭제`}
+                      onClick={() => removeSupplement(item.id)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
                   </div>
 
-                  <div className="time">{item.time}</div>
+                  {left !== null && (
+                    <div className={`card-stock ${left <= 7 ? "low" : ""}`}>
+                      <Package size={14} />
+                      남은 {item.stock}개 · 약 {left}일분
+                      {left <= 7 && " · 재구매 필요"}
+                    </div>
+                  )}
+
+                  {conflict && (
+                    <div className="card-warning">
+                      <TriangleAlert size={14} />
+                      <span>
+                        {josa(conflict.with.name, "과/와")} 같은 시간대예요.{" "}
+                        {conflict.rule.reason} 2시간 이상 간격을 두세요.
+                      </span>
+                    </div>
+                  )}
+
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </>
       )}

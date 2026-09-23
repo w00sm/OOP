@@ -347,3 +347,124 @@
   color: #6f7b78;
   line-height: 1.45;
 }
+/* ---------- 영양제 추가: 수량 입력 ---------- */
+.add-form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.add-form-row label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6f7b78;
+}
+
+.add-form-row input {
+  margin-top: 6px;
+}
+
+.add-form-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6f7b78;
+}
+
+/* ---------- 시간 자동 설정 안내 ---------- */
+.schedule-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f3fbe7;
+  border: 1px solid #d7eac0;
+}
+
+.schedule-notice-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #6aa82c;
+}
+
+.schedule-notice div {
+  flex: 1;
+}
+
+.schedule-notice strong {
+  display: block;
+  font-size: 14px;
+  color: #071426;
+}
+
+.schedule-notice p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.schedule-notice button {
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: #6f7b78;
+  display: flex;
+}
+
+/* ---------- 카드: 시간 변경·잔여량·상호작용 경고·삭제 ---------- */
+.card .time {
+  border: 0;
+  font-family: inherit;
+}
+
+.card .time-input {
+  width: 96px;
+  border: 1px solid #8bcf3f;
+  outline: none;
+}
+
+.card-stock,
+.card-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 10px 0 0 39px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #6f7b78;
+}
+
+.card-stock svg,
+.card-warning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.card-stock.low {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.card-warning {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff8e6;
+  color: #92400e;
+}
+
+.card-remove {
+  flex-shrink: 0;
+  margin-left: -6px;
+  border: 0;
+  padding: 4px;
+  background: transparent;
+  color: #c8d1cc;
+  display: flex;
+}
+
+.card-remove:hover {
+  color: #ef4444;
+}

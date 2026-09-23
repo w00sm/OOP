@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bell, SendHorizontal, Sparkles } from "lucide-react";
+import NotificationBell from "../NotificationBell";
+import { SendHorizontal, Sparkles } from "lucide-react";
 import { getOpenAI, hasOpenAIKey } from "../../services/openaiClient";
 import { findConcerns, recommend } from "../../services/recommendService";
 import "../styles/RecommendTab.css";
@@ -266,14 +267,7 @@ ${realConversation
           <p>나에게 딱 맞는 영양제를 찾아보세요</p>
         </div>
 
-        <button
-          type="button"
-          className="top-bell-button"
-          aria-label="알림"
-          onClick={onOpenNotification}
-        >
-          <Bell size={22} strokeWidth={2} />
-        </button>
+        <NotificationBell onClick={onOpenNotification} />
       </div>
 
       <div className="recommend-page">

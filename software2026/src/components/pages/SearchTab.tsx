@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Bell, Heart, Search, Sparkles, X } from "lucide-react";
+import NotificationBell from "../NotificationBell";
+import { Heart, Search, Sparkles, X } from "lucide-react";
 import type { Wishlist } from "../../hooks/useWishlist";
 import {
   SORT_LABELS,
@@ -11,6 +12,7 @@ import {
   type Product,
   type SortOption,
 } from "../../services/productService";
+import { josa } from "../../utils/josa";
 import "../styles/SearchTab.css";
 
 type SearchTabProps = {
@@ -24,16 +26,6 @@ type SearchTabProps = {
 
 // 이보다 작은 할인율은 의미가 적어 표시하지 않습니다.
 const MIN_DISCOUNT_TO_SHOW = 3;
-
-// 단어 끝 받침에 맞춰 '을/를'을 고릅니다. (철분을, 비타민B를, 오메가3을)
-function objectParticle(word: string) {
-  const last = word.trim().slice(-1).toUpperCase();
-  const code = last.charCodeAt(0) - 0xac00;
-  if (code >= 0 && code <= 11171) return code % 28 === 0 ? "를" : "을";
-  if ("013678LMN".includes(last)) return "을"; // 영·일·삼·육·칠·팔, 엘·엠·엔
-  if (/[0-9A-Z]/.test(last)) return "를";
-  return "을(를)";
-}
 
 const POPULAR_KEYWORDS = ["비타민D", "오메가3", "유산균", "마그네슘", "루테인", "피로"];
 
@@ -99,14 +91,7 @@ export default function SearchTab({
           <h1>검색</h1>
           <p>영양제 가격을 비교하고 찜해보세요</p>
         </div>
-        <button
-          type="button"
-          className="top-bell-button"
-          aria-label="알림"
-          onClick={onOpenNotification}
-        >
-          <Bell size={22} strokeWidth={2} />
-        </button>
+        <NotificationBell onClick={onOpenNotification} />
       </div>
 
       <div className="search-section">
@@ -199,7 +184,7 @@ export default function SearchTab({
               <button type="button" onClick={() => runSearch(suggestion)}>
                 '{suggestion}'
               </button>
-              {objectParticle(suggestion)} 찾고 계신가요?
+              {josa(suggestion, "을/를").slice(suggestion.length)} 찾고 계신가요?
             </p>
           </div>
         )}

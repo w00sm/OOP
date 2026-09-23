@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Bell, BellRing, Pencil, ShoppingBag, Trash2 } from "lucide-react";
+import NotificationBell from "../NotificationBell";
+import { BellRing, Pencil, ShoppingBag, Trash2 } from "lucide-react";
 import type { WishItem, Wishlist } from "../../hooks/useWishlist";
 import {
   formatPrice,
@@ -49,14 +50,7 @@ export default function WishTab({ wishlist, onOpenNotification }: WishTabProps) 
           <h1>관심 상품 목록</h1>
           <p>관심 있는 영양제 가격을 확인하세요</p>
         </div>
-        <button
-          type="button"
-          className="top-bell-button"
-          aria-label="알림"
-          onClick={onOpenNotification}
-        >
-          <Bell size={22} strokeWidth={2} />
-        </button>
+        <NotificationBell onClick={onOpenNotification} />
       </div>
 
       <div className="wish-section">

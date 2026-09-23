@@ -9,6 +9,9 @@ import WishTab from "./pages/WishTab";
 import MyPageTab from "./pages/MyPageTab";
 import { useWishlist } from "../hooks/useWishlist";
 import InstallBanner from "./InstallBanner";
+import { useAlertScheduler } from "../hooks/useAlertScheduler";
+import { useNotifications } from "../hooks/useNotifications";
+import { clearHistory, markAllRead, timeAgo } from "../services/notificationService";
 
 export type Tab = "홈" | "검색" | "추천" | "찜" | "마이페이지";
 export type TimeCategory = "아침" | "점심" | "저녁";
@@ -20,14 +23,8 @@ export type Supplement = {
   time: string;
   timeCategory: TimeCategory;
   checked: boolean;
-};
-
-export type NotificationItem = {
-  id: number;
-  title: string;
-  time: string;
-  content: string;
-  active: boolean;
+  stock?: number; // 남은 개수 (정·캡슐·포). 입력하면 재구매 알림에 사용
+  dailyDose?: number; // 하루 복용 개수 (기본 1)
 };
 
 export default function Home() {
@@ -77,46 +74,17 @@ export default function Home() {
         ];
   });
 
-  const notifications: NotificationItem[] = [
-    {
-      id: 1,
-      title: "복용 시간 알림",
-      time: "1시간 전",
-      content: "종합비타민 복용 시간입니다 (09:00)",
-      active: true,
-    },
-    {
-      id: 2,
-      title: "최저가 알림",
-      time: "3시간 전",
-      content: "[종근당] 루테인 지아잔틴이 5,000원 할인 중입니다",
-      active: true,
-    },
-    {
-      id: 3,
-      title: "복용 시간 알림",
-      time: "어제",
-      content: "칼슘 복용 시간입니다 (12:30)",
-      active: false,
-    },
-    {
-      id: 4,
-      title: "건강 팁",
-      time: "2일 전",
-      content: "규칙적인 영양제 복용은 건강 관리의 시작입니다",
-      active: false,
-    },
-    {
-      id: 5,
-      title: "최저가 알림",
-      time: "3일 전",
-      content: "[대웅제약] 비타민D 3000IU 특가 진행 중",
-      active: false,
-    },
-  ];
+  const { history: notifications } = useNotifications();
+  useAlertScheduler(supplements, wishlist.wishlist);
 
   const openAlarmPage = () => {
     setShowNotificationPage(true);
+  };
+
+  // 알림 화면을 닫을 때 읽음 처리 (열려 있는 동안은 새 알림이 강조되어 보임)
+  const closeAlarmPage = () => {
+    markAllRead();
+    setShowNotificationPage(false);
   };
 
   // 추천탭에서 성분을 누르면 그 성분으로 검색탭을 엽니다.
@@ -192,24 +160,36 @@ export default function Home() {
             <button
               type="button"
               className="mypage-back"
-              onClick={() => setShowNotificationPage(false)}
+              onClick={closeAlarmPage}
             >
               <ChevronLeft size={28} />
             </button>
             <h1>알림</h1>
+            {notifications.length > 0 && (
+              <button type="button" className="notification-clear" onClick={clearHistory}>
+                모두 지우기
+              </button>
+            )}
           </div>
 
           <div className="notification-list">
+            {notifications.length === 0 && (
+              <div className="notification-empty">
+                아직 받은 알림이 없어요.
+                <br />
+                복용 시간, 최저가, 재구매 시점이 되면 여기에 알려드려요.
+              </div>
+            )}
             {notifications.map((item) => (
               <div
-                className={`notification-card ${item.active ? "active" : ""}`}
+                className={`notification-card ${item.read ? "" : "active"}`}
                 key={item.id}
               >
                 <div className="notification-top">
                   <h2>{item.title}</h2>
-                  <span>{item.time}</span>
+                  <span>{timeAgo(item.createdAt)}</span>
                 </div>
-                <p>{item.content}</p>
+                <p>{item.body}</p>
               </div>
             ))}
           </div>
@@ -221,7 +201,7 @@ export default function Home() {
           className={activeTab === "홈" ? "active" : ""}
           onClick={() => {
             setActiveTab("홈");
-            setShowNotificationPage(false);
+            closeAlarmPage();
           }}
         >
           <span className="nav-icon"><House size={22} /></span>
@@ -232,7 +212,7 @@ export default function Home() {
           className={activeTab === "검색" ? "active" : ""}
           onClick={() => {
             setActiveTab("검색");
-            setShowNotificationPage(false);
+            closeAlarmPage();
           }}
         >
           <span className="nav-icon"><Search size={22} /></span>
@@ -243,7 +223,7 @@ export default function Home() {
           className={activeTab === "추천" ? "active" : ""}
           onClick={() => {
             setActiveTab("추천");
-            setShowNotificationPage(false);
+            closeAlarmPage();
           }}
         >
           <span className="nav-icon"><Sparkles size={22} /></span>
@@ -254,7 +234,7 @@ export default function Home() {
           className={activeTab === "찜" ? "active" : ""}
           onClick={() => {
             setActiveTab("찜");
-            setShowNotificationPage(false);
+            closeAlarmPage();
           }}
         >
           <span className="nav-icon"><Heart size={22} /></span>
@@ -265,7 +245,7 @@ export default function Home() {
           className={activeTab === "마이페이지" ? "active" : ""}
           onClick={() => {
             setActiveTab("마이페이지");
-            setShowNotificationPage(false);
+            closeAlarmPage();
           }}
         >
           <span className="nav-icon"><UserRound size={22} /></span>
