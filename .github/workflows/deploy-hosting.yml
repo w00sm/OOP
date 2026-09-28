@@ -1,0 +1,62 @@
+# Fit Vita 자동 배포
+# 코드가 push되면 GitHub에서 빌드해 Firebase Hosting(https://fit-vita-e9160.web.app)에 올립니다.
+# PC에서 npm run deploy를 하지 않아도 됩니다.
+#
+# 준비: 저장소 Settings → Secrets and variables → Actions 에
+#       FIREBASE_SERVICE_ACCOUNT (Firebase 서비스 계정 키 JSON 전체)가 있어야 합니다. (서버 푸시와 같은 시크릿)
+
+name: 앱 자동 배포
+
+on:
+  push:
+    branches:
+      - main
+      - claude/powershell-install-script-question-6vy5cy
+    paths:
+      - "software2026/**"
+      - ".github/workflows/deploy-hosting.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-hosting
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    defaults:
+      run:
+        working-directory: software2026
+    steps:
+      - name: 서비스 계정 키 확인
+        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        working-directory: .
+        run: |
+          echo "::error::FIREBASE_SERVICE_ACCOUNT 시크릿이 없어 배포할 수 없습니다. 저장소 Settings → Secrets and variables → Actions에 등록해 주세요."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: software2026/package-lock.json
+
+      - name: 패키지 설치
+        run: npm ci --no-audit --no-fund
+
+      - name: 빌드
+        run: npm run build
+
+      - name: Firebase Hosting 배포
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: fit-vita-e9160
+          channelId: live
+          entryPoint: software2026
