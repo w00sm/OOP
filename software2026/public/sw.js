@@ -4,7 +4,7 @@
 // - 알림을 누르면 열려 있는 앱 창으로 이동하거나 새로 엽니다.
 // - 서버 푸시(FCM)를 붙일 때 push 이벤트 처리도 이 파일에 추가합니다.
 
-const CACHE_NAME = "fitvita-v4";
+const CACHE_NAME = "fitvita-v5";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -38,9 +38,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
   // 화면 이동: 네트워크 우선, 실패하면 저장된 화면
+  // 브라우저 HTTP 캐시에 남은 예전 index.html을 받지 않도록 cache: "no-cache"로 서버에 확인합니다.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request)
+      fetch(request.url, { cache: "no-cache", credentials: "same-origin" })
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put("/", copy));
