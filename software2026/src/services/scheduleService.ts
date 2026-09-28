@@ -131,3 +131,24 @@ export function findScheduleConflicts(
 
 // 남은 양으로 며칠 더 먹을 수 있는지 (정보가 없으면 null)
 export const daysLeft = (supplement: Supplement) => daysLeftOf(supplement);
+
+// 복용 방법에서 1회 복용량과 단위 읽기: "2정" → { amount: 2, unit: "정" }, "1캡슐" → { amount: 1, unit: "캡슐" }
+export function parseDose(text: string): { amount: number; unit: string } | null {
+  const found = text.match(/(\d+(?:\.\d+)?)\s*(정|캡슐|포|알|개|스틱|방울|ml|mL|g)?/);
+  if (!found) return null;
+  const amount = Number(found[1]);
+  if (!(amount > 0)) return null;
+  return { amount, unit: found[2] ?? "개" };
+}
+
+const TIMING_WORDS = ["식전", "식후", "취침", "공복", "자기 전", "잠들기"];
+
+// 성분에 맞는 복용 타이밍(식전·식후·취침 전·공복)을 복용 방법 뒤에 붙입니다.
+// 사용자가 이미 타이밍을 적었으면 그대로 둡니다.
+export function withTiming(name: string, dose: string) {
+  const text = dose.trim();
+  if (TIMING_WORDS.some((word) => text.includes(word))) return text;
+  const ingredients = detectIngredients(name);
+  const rule = INGREDIENT_RULES.find((item) => ingredients.includes(item.name));
+  return `${text} · ${rule?.timing ?? "식후"}`;
+}

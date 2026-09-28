@@ -4,7 +4,7 @@
 
 import type { Supplement } from "../components/Home";
 import type { WishItem } from "../hooks/useWishlist";
-import { doseAlerts, priceAlerts, restockAlerts, surveyAlerts, type AlertMessage } from "./alertRules";
+import { doseAlerts, priceAlerts, stockAlertsOnCheck, type AlertMessage } from "./alertRules";
 import { notify } from "./notificationService";
 import { getProductsByIds } from "./productService";
 
@@ -16,9 +16,9 @@ export async function checkDoseReminders(supplements: Supplement[], now = new Da
   await send(doseAlerts(supplements, now.getHours() * 60 + now.getMinutes()));
 }
 
-export async function checkRestock(supplements: Supplement[]) {
-  await send(restockAlerts(supplements));
-  await send(surveyAlerts(supplements));
+// 복용 체크로 잔여량이 줄었을 때 (재구매 7일·3일 전, 다 먹으면 설문)
+export async function notifyStockChange(item: Supplement, previousStock: number) {
+  await send(stockAlertsOnCheck(item, previousStock));
 }
 
 export async function checkPriceAlerts(wishlist: WishItem[]) {

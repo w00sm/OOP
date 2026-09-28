@@ -60,46 +60,54 @@ export function daysLeftOf(item: AlertSupplement) {
 
 const cycleOf = (item: AlertSupplement) => item.stockUpdatedAt ?? "0";
 
-// 재구매 알림: 7일 안에 떨어질 때 한 번, 3일 안에 떨어질 때 한 번 더 (한 통당 각각 한 번)
-export function restockAlerts(supplements: AlertSupplement[]): AlertMessage[] {
-  return supplements.flatMap((item): AlertMessage[] => {
-    const days = daysLeftOf(item);
-    if (days === null || days <= 0 || days > RESTOCK_DAYS) return [];
-    const name = josa(item.name, "이/가");
-    if (days <= RESTOCK_URGENT_DAYS) {
-      return [
-        {
-          type: "restock",
-          title: "재구매 알림 (3일 전)",
-          body: `${name} ${days}일분밖에 안 남았어요! 지금 주문하지 않으면 복용이 끊길 수 있어요.`,
-          dedupeKey: `restock3-${item.id}-${cycleOf(item)}`,
-          once: true,
-        },
-      ];
-    }
+const daysFor = (stock: number, item: AlertSupplement) =>
+  Math.floor(stock / (item.dailyDose && item.dailyDose > 0 ? item.dailyDose : 1));
+
+// 복용 체크로 잔여량이 줄었을 때 보내는 알림 (체크하는 순간 기준을 넘으면 한 번)
+// - 7일분 이하가 되면: 재구매 알림
+// - 3일분 이하가 되면: 한 번 더 (3일 전)
+// - 0이 되면: 한 통 다 먹었어요 → 설문 요청
+// 같은 통(잔여량을 새로 채우기 전까지)에서는 각각 한 번만 보냅니다.
+export function stockAlertsOnCheck(item: AlertSupplement, previousStock: number): AlertMessage[] {
+  if (item.stock === undefined || item.stock === null || item.stock >= previousStock) return [];
+  const before = daysFor(previousStock, item);
+  const after = daysFor(item.stock, item);
+  const name = josa(item.name, "이/가");
+
+  if (item.stock === 0) {
+    return [
+      {
+        type: "survey",
+        title: "한 통 다 드셨어요!",
+        body: `${josa(item.name, "은/는")} 어떠셨나요? 간단한 설문에 답하면 다음 영양제를 맞춤 추천해 드려요.`,
+        dedupeKey: `survey-${item.id}-${cycleOf(item)}`,
+        once: true,
+      },
+    ];
+  }
+  if (after <= RESTOCK_URGENT_DAYS && before > RESTOCK_URGENT_DAYS) {
+    return [
+      {
+        type: "restock",
+        title: "재구매 알림 (3일 전)",
+        body: `${name} ${after}일분밖에 안 남았어요! 지금 주문하지 않으면 복용이 끊길 수 있어요.`,
+        dedupeKey: `restock3-${item.id}-${cycleOf(item)}`,
+        once: true,
+      },
+    ];
+  }
+  if (after <= RESTOCK_DAYS && before > RESTOCK_DAYS) {
     return [
       {
         type: "restock",
         title: "재구매 알림",
-        body: `${name} 약 ${days}일 뒤에 떨어져요. 미리 주문해 두세요.`,
+        body: `${name} 약 ${after}일 뒤에 떨어져요. 미리 주문해 두세요.`,
         dedupeKey: `restock7-${item.id}-${cycleOf(item)}`,
         once: true,
       },
     ];
-  });
-}
-
-// 설문 알림: 한 통을 다 비우면 (잔여량 0) 효과·변화를 묻는 설문 요청 (한 통당 한 번)
-export function surveyAlerts(supplements: AlertSupplement[]): AlertMessage[] {
-  return supplements
-    .filter((item) => item.stock === 0)
-    .map((item) => ({
-      type: "survey",
-      title: "한 통 다 드셨어요!",
-      body: `${josa(item.name, "은/는")} 어떠셨나요? 간단한 설문에 답하면 다음 영양제를 맞춤 추천해 드려요.`,
-      dedupeKey: `survey-${item.id}-${cycleOf(item)}`,
-      once: true,
-    }));
+  }
+  return [];
 }
 
 // 최저가·목표가 알림: 찜 목록 상품 가격 확인

@@ -371,20 +371,52 @@
   color: #6f7b78;
   line-height: 1.45;
 }
-/* ---------- 영양제 추가: 수량 입력 ---------- */
-.add-form-row {
+/* ---------- 영양제 추가: 제목·닫기·필수 입력·잔여량 ---------- */
+.add-form-head {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.add-form-row label {
-  flex: 1;
+.add-form-head strong {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.add-form .add-form-head button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: #f2f5f3;
+  color: #6f7b78;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-form input.invalid,
+.add-form input.invalid:focus {
+  border-color: #ef4444;
+  margin-bottom: 4px;
+}
+
+.add-form-error {
+  margin: 0 0 10px 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.add-form-label {
+  display: block;
   font-size: 12px;
   font-weight: 700;
   color: #6f7b78;
 }
 
-.add-form-row input {
+.add-form-label input {
   margin-top: 6px;
 }
 

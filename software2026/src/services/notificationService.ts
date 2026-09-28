@@ -19,7 +19,7 @@ export type NotificationSettings = {
   price: boolean; // 최저가·목표가 알림
   restock: boolean; // 재구매(잔여량) 알림
   push: boolean; // 휴대폰·PC 시스템 알림으로도 띄울지 (꺼도 앱 안 알림 목록에는 쌓임)
-  night: boolean; // 밤 10시~아침 8시에도 가격·재구매 알림 받기 (복용 알림은 항상)
+  night: boolean; // 밤 10시~아침 8시에도 가격 알림 받기 (복용·재구매 알림은 항상)
 };
 
 const SETTINGS_KEY = "notificationSettings";
@@ -204,10 +204,8 @@ export async function notify({ type, title, body, dedupeKey, once }: NotifyInput
   if (dedupeKey && alreadySent(dedupeKey)) return false;
 
   const now = new Date();
-  const quiet =
-    !settings.night &&
-    isNight(now) &&
-    (type === "lowest" || type === "target" || type === "restock" || type === "survey");
+  // 조용한 시간: 가격 알림만 시스템 알림 없이 목록에 저장 (복용·재구매·설문은 사용자가 체크한 순간이라 바로 보여줌)
+  const quiet = !settings.night && isNight(now) && (type === "lowest" || type === "target");
   // 조용한 시간에는 시스템 알림 없이 목록에만 쌓았다가, 다음 확인 때 다시 보내지 않도록 기록합니다.
   if (dedupeKey) {
     if (once) markSentOnce(dedupeKey);

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Supplement } from "../components/Home";
 import type { WishItem } from "./useWishlist";
-import { checkDoseReminders, checkPriceAlerts, checkRestock } from "../services/alertChecks";
+import { checkDoseReminders, checkPriceAlerts } from "../services/alertChecks";
 
 const CHECK_INTERVAL_MS = 60 * 1000;
 
@@ -19,7 +19,6 @@ export function useAlertScheduler(supplements: Supplement[], wishlist: WishItem[
     const runChecks = async () => {
       const { supplements, wishlist } = latest.current;
       await checkDoseReminders(supplements);
-      await checkRestock(supplements);
       await checkPriceAlerts(wishlist);
     };
 

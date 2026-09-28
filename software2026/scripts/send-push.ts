@@ -11,8 +11,6 @@ import { getMessaging } from "firebase-admin/messaging";
 import {
   doseAlerts,
   priceAlerts,
-  restockAlerts,
-  surveyAlerts,
   type AlertMessage,
   type AlertSupplement,
 } from "../src/services/alertRules";
@@ -75,9 +73,9 @@ export async function alertsFor(user: UserDoc) {
 
   const alerts: AlertMessage[] = [];
   if (settings.schedule) alerts.push(...doseAlerts(supplements, now.minutes));
-  // 조용한 시간에는 가격·재구매 알림을 보내지 않고 아침에 보냅니다.
+  // 재구매·설문 알림은 앱에서 복용을 체크하는 순간 앱이 직접 보내므로 서버는 보내지 않습니다.
+  // 조용한 시간에는 가격 알림을 보내지 않고 아침에 보냅니다.
   if (!isNight || settings.night) {
-    if (settings.restock) alerts.push(...restockAlerts(supplements), ...surveyAlerts(supplements));
     if (settings.price && user.wishlist?.length) {
       const products = await getProductsByIds(user.wishlist.map((item) => item.productId));
       alerts.push(...priceAlerts(user.wishlist, products));

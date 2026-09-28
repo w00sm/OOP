@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, Heart, House, Search, Sparkles, UserRound } from "lucide-react";
 import "./Home.css";
 
@@ -9,6 +9,11 @@ import WishTab from "./pages/WishTab";
 import MyPageTab from "./pages/MyPageTab";
 import { useWishlist } from "../hooks/useWishlist";
 import InstallBanner from "./InstallBanner";
+import {
+  DEFAULT_SUPPLEMENTS,
+  markDemoStockSeeded,
+  seedDemoStockOnce,
+} from "../data/defaultSupplements";
 import LoadingScreen from "./LoadingScreen";
 import { useAlertScheduler } from "../hooks/useAlertScheduler";
 import { useCloudSync } from "../hooks/useCloudSync";
@@ -41,49 +46,20 @@ export default function Home() {
   const wishlist = useWishlist();
 
   const [supplements, setSupplements] = useState<Supplement[]>(() => {
-    const saved = localStorage.getItem("supplements");
-    return saved
-      ? JSON.parse(saved)
-      : [
-          {
-            id: 1,
-            name: "종합비타민",
-            desc: "1정 · 식후 30분",
-            time: "08:00",
-            timeCategory: "아침",
-            checked: true,
-          },
-          {
-            id: 2,
-            name: "비타민B",
-            desc: "1정 · 식후",
-            time: "09:00",
-            timeCategory: "아침",
-            checked: false,
-          },
-          {
-            id: 3,
-            name: "오메가3",
-            desc: "1캡슐 · 식후",
-            time: "13:00",
-            timeCategory: "점심",
-            checked: false,
-          },
-          {
-            id: 4,
-            name: "마그네슘",
-            desc: "1정 · 취침 전",
-            time: "22:00",
-            timeCategory: "저녁",
-            checked: false,
-          },
-        ];
+    try {
+      const saved = localStorage.getItem("supplements");
+      if (saved) return seedDemoStockOnce(JSON.parse(saved));
+    } catch {
+      // 저장된 값을 읽지 못하면 기본값으로 시작
+    }
+    return DEFAULT_SUPPLEMENTS;
   });
 
   const { history: notifications } = useNotifications();
   useAlertScheduler(supplements, wishlist.wishlist);
   useCloudSync(supplements, wishlist.wishlist);
   useDailyReset(setSupplements);
+  useEffect(markDemoStockSeeded, []);
 
   const openAlarmPage = () => {
     setShowNotificationPage(true);

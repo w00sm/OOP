@@ -18,9 +18,12 @@ import type { Supplement, TimeCategory } from "../Home";
 import {
   daysLeft,
   findScheduleConflicts,
+  parseDose,
   suggestSchedule,
   timeToCategory,
+  withTiming,
 } from "../../services/scheduleService";
+import { notifyStockChange } from "../../services/alertChecks";
 import { pendingSurveys, type SurveyAction } from "../../services/surveyService";
 import { josa } from "../../utils/josa";
 import SurveyModal from "../SurveyModal";
@@ -71,12 +74,11 @@ export default function HomeTab({
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newStock, setNewStock] = useState("");
-  const [newDailyDose, setNewDailyDose] = useState("1");
+  const [formErrors, setFormErrors] = useState<{ name?: string; dose?: string }>({});
   const [scheduleNotice, setScheduleNotice] = useState<{ title: string; reasons: string[] } | null>(null);
   const [editingTimeId, setEditingTimeId] = useState<number | null>(null);
   const [editingStockId, setEditingStockId] = useState<number | null>(null);
   const [stockInput, setStockInput] = useState("");
-  const [doseInput, setDoseInput] = useState("1");
   const [surveyTargetId, setSurveyTargetId] = useState<number | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
@@ -131,23 +133,35 @@ export default function HomeTab({
     localStorage.setItem("dailySupplementRecords", JSON.stringify(dailyRecords));
   }, [dailyRecords]);
 
+  const closeAddForm = () => {
+    setShowAddForm(false);
+    setFormErrors({});
+  };
+
   const addSupplement = () => {
-    if (!newName.trim() || !newDesc.trim()) return;
+    // 영양제 이름과 복용 방법(숫자 포함)은 필수
+    const dose = parseDose(newDesc);
+    const errors: { name?: string; dose?: string } = {};
+    if (!newName.trim()) errors.name = "영양제 이름을 입력해주세요.";
+    if (!newDesc.trim()) errors.dose = "복용 방법을 입력해주세요. (예: 1정)";
+    else if (!dose) errors.dose = "숫자와 함께 입력해주세요. (예: 1정, 2캡슐)";
+    setFormErrors(errors);
+    if (errors.name || errors.dose || !dose) return;
 
     // 이미 등록된 영양제와의 상호작용을 따져 복용 시간을 자동으로 정합니다.
     const schedule = suggestSchedule(newName, supplements);
     const stock = Number(newStock);
-    const dailyDose = Number(newDailyDose);
 
     const newItem: Supplement = {
       id: Date.now(),
       name: newName.trim(),
-      desc: newDesc.trim(),
+      // 성분에 맞는 식전·식후·취침 전·공복을 자동으로 붙임 (예: "1정" → "1정 · 식후")
+      desc: withTiming(newName, newDesc),
       time: schedule.time,
       timeCategory: schedule.timeCategory,
       checked: false,
-      stock: newStock.trim() !== "" && stock >= 0 ? stock : undefined,
-      dailyDose: dailyDose > 0 ? dailyDose : 1,
+      stock: newStock.trim() !== "" && stock >= 0 ? Math.floor(stock) : undefined,
+      dailyDose: dose.amount, // 하루 한 번 복용 기준, 체크할 때마다 이만큼 잔여량이 줄어듦
       stockUpdatedAt: newStock.trim() !== "" ? new Date().toISOString() : undefined,
     };
 
@@ -159,8 +173,7 @@ export default function HomeTab({
     setNewName("");
     setNewDesc("");
     setNewStock("");
-    setNewDailyDose("1");
-    setShowAddForm(false);
+    closeAddForm();
     setHomeView("일정");
     setSelectedTime(schedule.timeCategory);
     setStorageTips([]);
@@ -171,27 +184,22 @@ export default function HomeTab({
   // 이번 체크로 한 통을 다 비우면(잔여량 0) 설문을 띄웁니다.
   const toggleCheck = (id: number) => {
     const target = supplements.find((item) => item.id === id);
-    if (
-      target &&
-      !target.checked &&
-      target.stock !== undefined &&
-      target.stock > 0 &&
-      target.stock - (target.dailyDose ?? 1) <= 0
-    ) {
-      setSurveyTargetId(id);
+    if (!target) return;
+    const checked = !target.checked;
+    const dose = target.dailyDose ?? 1;
+    const stock =
+      target.stock === undefined
+        ? undefined
+        : Math.max(0, target.stock + (checked ? -dose : dose));
+    const updated: Supplement = { ...target, checked, stock };
+
+    setSupplements((prev) => prev.map((item) => (item.id === id ? updated : item)));
+
+    if (checked && target.stock !== undefined) {
+      // 이번 체크로 7일분·3일분·0 기준을 넘으면 알림 (재구매 / 다 먹었으면 설문)
+      notifyStockChange(updated, target.stock);
+      if (target.stock > 0 && stock === 0) setSurveyTargetId(id);
     }
-    setSupplements((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const checked = !item.checked;
-        const dose = item.dailyDose ?? 1;
-        const stock =
-          item.stock === undefined
-            ? undefined
-            : Math.max(0, item.stock + (checked ? -dose : dose));
-        return { ...item, checked, stock };
-      })
-    );
   };
 
   const changeTime = (id: number, time: string) => {
@@ -211,13 +219,11 @@ export default function HomeTab({
   const startEditStock = (item: Supplement) => {
     setEditingStockId(item.id);
     setStockInput(item.stock === undefined ? "" : String(item.stock));
-    setDoseInput(String(item.dailyDose ?? 1));
   };
 
   // 잔여량 직접 수정. 늘어나면 새 통을 채운 것으로 보고 재구매·설문 알림 주기를 새로 시작합니다.
   const saveStock = (id: number) => {
     const stock = Number(stockInput);
-    const dose = Number(doseInput);
     setSupplements((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
@@ -227,7 +233,8 @@ export default function HomeTab({
         return {
           ...item,
           stock: nextStock,
-          dailyDose: dose > 0 ? Math.floor(dose) : 1,
+          // 복용 방법(예: "2정")에서 1회 복용량을 읽어 사용
+          dailyDose: parseDose(item.desc)?.amount ?? item.dailyDose ?? 1,
           stockUpdatedAt: refilled ? new Date().toISOString() : item.stockUpdatedAt,
         };
       })
@@ -361,51 +368,56 @@ export default function HomeTab({
 
       <button
         className="add-button"
-        onClick={() => setShowAddForm(!showAddForm)}
+        onClick={() => (showAddForm ? closeAddForm() : setShowAddForm(true))}
       >
         ＋ 영양제 추가
       </button>
 
       {showAddForm && (
         <div className="add-form">
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="영양제 이름"
-          />
-
-          <input
-            value={newDesc}
-            onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="복용 방법 예: 1정 · 식후"
-          />
-
-          <div className="add-form-row">
-            <label>
-              남은 개수
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                value={newStock}
-                onChange={(e) => setNewStock(e.target.value)}
-                placeholder="예: 60"
-              />
-            </label>
-            <label>
-              하루 복용 개수
-              <input
-                type="number"
-                inputMode="numeric"
-                min="1"
-                value={newDailyDose}
-                onChange={(e) => setNewDailyDose(e.target.value)}
-              />
-            </label>
+          <div className="add-form-head">
+            <strong>영양제 추가</strong>
+            <button type="button" aria-label="닫기" onClick={closeAddForm}>
+              <X size={18} />
+            </button>
           </div>
+
+          <input
+            className={formErrors.name ? "invalid" : ""}
+            value={newName}
+            onChange={(e) => {
+              setNewName(e.target.value);
+              setFormErrors((prev) => ({ ...prev, name: undefined }));
+            }}
+            placeholder="영양제 이름 (필수)"
+          />
+          {formErrors.name && <p className="add-form-error">{formErrors.name}</p>}
+
+          <input
+            className={formErrors.dose ? "invalid" : ""}
+            value={newDesc}
+            onChange={(e) => {
+              setNewDesc(e.target.value);
+              setFormErrors((prev) => ({ ...prev, dose: undefined }));
+            }}
+            placeholder="복용 방법 예: 1정 (필수)"
+          />
+          {formErrors.dose && <p className="add-form-error">{formErrors.dose}</p>}
+
+          <label className="add-form-label">
+            잔여량
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              value={newStock}
+              onChange={(e) => setNewStock(e.target.value)}
+              placeholder="예: 60 (선택)"
+            />
+          </label>
           <p className="add-form-hint">
-            복용 시간은 함께 먹는 영양제와의 궁합을 따져 자동으로 정해져요.
-            남은 개수를 입력하면 떨어지기 7일 전과 3일 전에 재구매 알림을 보내드려요.
+            복용 시간과 식전·식후는 함께 먹는 영양제와의 궁합을 따져 자동으로 정해져요.
+            잔여량을 입력하면 떨어지기 7일 전과 3일 전에 알림을 보내드려요.
           </p>
 
           <button onClick={addSupplement}>추가하기</button>
@@ -550,7 +562,7 @@ export default function HomeTab({
                   {editingStockId === item.id ? (
                     <div className="stock-editor">
                       <label>
-                        남은 개수
+                        잔여량
                         <input
                           type="number"
                           inputMode="numeric"
@@ -559,16 +571,6 @@ export default function HomeTab({
                           value={stockInput}
                           onChange={(e) => setStockInput(e.target.value)}
                           placeholder="예: 60"
-                        />
-                      </label>
-                      <label>
-                        하루 복용
-                        <input
-                          type="number"
-                          inputMode="numeric"
-                          min="1"
-                          value={doseInput}
-                          onChange={(e) => setDoseInput(e.target.value)}
                         />
                       </label>
                       <div className="stock-editor-buttons">
@@ -593,7 +595,8 @@ export default function HomeTab({
                     >
                       <Package size={14} />
                       <span>
-                        남은 {item.stock}개 · 하루 {item.dailyDose ?? 1}개 · 약 {left}일분
+                        잔여량 {item.stock}
+                        {parseDose(item.desc)?.unit ?? "개"} · 약 {left}일분
                         {left === 0 ? " · 다 드셨어요" : left <= 7 ? " · 재구매 필요" : ""}
                       </span>
                       <Pencil size={12} className="stock-edit-icon" />
@@ -605,7 +608,7 @@ export default function HomeTab({
                       onClick={() => startEditStock(item)}
                     >
                       <Package size={14} />
-                      <span>잔여량 입력하고 재구매 알림 받기</span>
+                      <span>잔여량 입력하기</span>
                     </button>
                   )}
 

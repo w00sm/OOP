@@ -143,8 +143,8 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
     },
     {
       key: "restock",
-      title: "재구매 알림",
-      desc: "남은 영양제가 7일분 이하가 되면 알려드립니다",
+      title: "잔여량 알림",
+      desc: "잔여량이 7일분, 3일분 남았을 때와 다 먹었을 때 알려드립니다",
     },
     {
       key: "push",
@@ -154,7 +154,7 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
     {
       key: "night",
       title: "야간 푸시 알림",
-      desc: "밤 10시~아침 8시에도 가격·재구매 알림을 받습니다 (복용 알림은 항상 울려요)",
+      desc: "밤 10시~아침 8시에도 가격 알림을 받습니다 (복용·잔여량 알림은 항상 울려요)",
     },
   ];
 
