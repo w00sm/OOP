@@ -2,6 +2,9 @@
 
 // 받침이 있는지: 한글은 종성으로, 숫자·영문은 읽는 소리로 판단 (영·일·삼·육·칠·팔, 엘·엠·엔)
 function hasBatchim(word: string): boolean | null {
+  // 단위로 끝나면 읽는 소리 기준: 밀리그램·마이크로그램(받침 있음), 아이유(없음)
+  if (/(mg|µg|ug|mcg)$/i.test(word.trim())) return true;
+  if (/iu$/i.test(word.trim())) return false;
   const last = word.trim().slice(-1).toUpperCase();
   const code = last.charCodeAt(0) - 0xac00;
   if (code >= 0 && code <= 11171) return code % 28 !== 0;

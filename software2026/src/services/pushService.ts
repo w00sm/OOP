@@ -5,7 +5,7 @@
 import type { Supplement } from "../components/Home";
 import type { WishItem } from "../hooks/useWishlist";
 import { VAPID_KEY, firebaseConfig, isFirebaseConfigured } from "../firebase/config";
-import { emitChange, getSentKeysToday, getSettings } from "./notificationService";
+import { emitChange, getSentKeysToday, getSentOnceKeys, getSettings } from "./notificationService";
 
 const ENABLED_KEY = "serverPushEnabled";
 const TOKEN_KEY = "serverPushToken";
@@ -123,19 +123,26 @@ export async function syncForServerPush(supplements: Supplement[], wishlist: Wis
   await firestore.setDoc(
     ref,
     {
-      supplements: supplements.map(({ id, name, desc, time, checked, stock, dailyDose }) => ({
-        id,
-        name,
-        desc,
-        time,
-        checked,
-        stock: stock ?? null,
-        dailyDose: dailyDose ?? 1,
-      })),
+      supplements: supplements.map(
+        ({ id, name, desc, time, checked, stock, dailyDose, stockUpdatedAt }) => ({
+          id,
+          name,
+          desc,
+          time,
+          checked,
+          stock: stock ?? null,
+          dailyDose: dailyDose ?? 1,
+          stockUpdatedAt: stockUpdatedAt ?? null,
+        })
+      ),
       wishlist,
       settings: getSettings(),
       // 앱에서 이미 보낸 알림은 서버가 다시 보내지 않도록
-      clientSent: { date: `${today.getFullYear()}-${m}-${d}`, keys: getSentKeysToday() },
+      clientSent: {
+        date: `${today.getFullYear()}-${m}-${d}`,
+        keys: getSentKeysToday(),
+        onceKeys: getSentOnceKeys(),
+      },
       // 체크 표시는 이 날짜에만 유효 (다음 날 앱을 안 열어도 서버가 어제 체크로 착각하지 않게)
       syncedDate: `${today.getFullYear()}-${m}-${d}`,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

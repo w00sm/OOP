@@ -4,7 +4,7 @@
 
 import type { Supplement } from "../components/Home";
 import type { WishItem } from "../hooks/useWishlist";
-import { doseAlerts, priceAlerts, restockAlerts, type AlertMessage } from "./alertRules";
+import { doseAlerts, priceAlerts, restockAlerts, surveyAlerts, type AlertMessage } from "./alertRules";
 import { notify } from "./notificationService";
 import { getProductsByIds } from "./productService";
 
@@ -18,6 +18,7 @@ export async function checkDoseReminders(supplements: Supplement[], now = new Da
 
 export async function checkRestock(supplements: Supplement[]) {
   await send(restockAlerts(supplements));
+  await send(surveyAlerts(supplements));
 }
 
 export async function checkPriceAlerts(wishlist: WishItem[]) {

@@ -12,6 +12,7 @@ import InstallBanner from "./InstallBanner";
 import LoadingScreen from "./LoadingScreen";
 import { useAlertScheduler } from "../hooks/useAlertScheduler";
 import { useCloudSync } from "../hooks/useCloudSync";
+import { useDailyReset } from "../hooks/useDailyReset";
 import { useNotifications } from "../hooks/useNotifications";
 import { clearHistory, markAllRead, timeAgo } from "../services/notificationService";
 
@@ -27,6 +28,7 @@ export type Supplement = {
   checked: boolean;
   stock?: number; // 남은 개수 (정·캡슐·포). 입력하면 재구매 알림에 사용
   dailyDose?: number; // 하루 복용 개수 (기본 1)
+  stockUpdatedAt?: string; // 잔여량을 새로 채운 시각 (한 통 단위로 재구매·설문 알림을 한 번씩 보내는 기준)
 };
 
 export default function Home() {
@@ -81,6 +83,7 @@ export default function Home() {
   const { history: notifications } = useNotifications();
   useAlertScheduler(supplements, wishlist.wishlist);
   useCloudSync(supplements, wishlist.wishlist);
+  useDailyReset(setSupplements);
 
   const openAlarmPage = () => {
     setShowNotificationPage(true);
@@ -114,6 +117,8 @@ export default function Home() {
           supplements={supplements}
           setSupplements={setSupplements}
           onOpenNotification={openAlarmPage}
+          onSearch={goToSearch}
+          onRecommend={goToRecommendedSearch}
         />
       )}
 
@@ -130,6 +135,7 @@ export default function Home() {
 
       {activeTab === "추천" && (
         <RecommendTab
+          supplements={supplements}
           onOpenNotification={openAlarmPage}
           onSearch={goToSearch}
           onRecommend={goToRecommendedSearch}

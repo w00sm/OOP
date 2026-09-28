@@ -3,7 +3,7 @@
 // 지금은 앱이 열려 있을 때(백그라운드 탭 포함) 브라우저 Notification API로 알림을 띄웁니다.
 // 앱이 완전히 꺼져 있을 때의 알림은 FCM(서버 푸시)으로 보내야 합니다.
 
-export type NotificationType = "dose" | "lowest" | "target" | "restock" | "test";
+export type NotificationType = "dose" | "lowest" | "target" | "restock" | "survey" | "test";
 
 export type AppNotification = {
   id: string;
@@ -25,6 +25,8 @@ export type NotificationSettings = {
 const SETTINGS_KEY = "notificationSettings";
 const HISTORY_KEY = "notificationHistory";
 const SENT_KEY = "notificationSentKeys";
+const SENT_ONCE_KEY = "notificationSentOnceKeys"; // 날짜와 상관없이 한 번만 보내는 알림 (재구매 7일·3일, 설문)
+const MAX_ONCE_KEYS = 300;
 const CHANGE_EVENT = "fitvita:notifications";
 const MAX_HISTORY = 50;
 
@@ -41,6 +43,7 @@ const TYPE_TO_SETTING: Record<NotificationType, keyof NotificationSettings | nul
   lowest: "price",
   target: "price",
   restock: "restock",
+  survey: "restock",
   test: null,
 };
 
@@ -139,6 +142,7 @@ const todayKey = () => {
 
 // 같은 알림(dedupeKey)은 하루에 한 번만 보냅니다.
 function alreadySent(dedupeKey: string) {
+  if (getSentOnceKeys().includes(dedupeKey)) return true;
   const sent = read<Record<string, string[]>>(SENT_KEY, {});
   return sent[todayKey()]?.includes(dedupeKey) ?? false;
 }
@@ -146,6 +150,14 @@ function alreadySent(dedupeKey: string) {
 export function getSentKeysToday(): string[] {
   const sent = read<Record<string, string[]>>(SENT_KEY, {});
   return sent[todayKey()] ?? [];
+}
+
+export function getSentOnceKeys(): string[] {
+  return readArray<string>(SENT_ONCE_KEY);
+}
+
+function markSentOnce(dedupeKey: string) {
+  write(SENT_ONCE_KEY, [...getSentOnceKeys(), dedupeKey].slice(-MAX_ONCE_KEYS));
 }
 
 function markSent(dedupeKey: string) {
@@ -182,18 +194,25 @@ export type NotifyInput = {
   title: string;
   body: string;
   dedupeKey?: string; // 없으면 중복 검사 없이 항상 보냄
+  once?: boolean; // true면 날짜가 바뀌어도 같은 dedupeKey는 다시 보내지 않음
 };
 
-export async function notify({ type, title, body, dedupeKey }: NotifyInput) {
+export async function notify({ type, title, body, dedupeKey, once }: NotifyInput) {
   const settings = getSettings();
   const settingKey = TYPE_TO_SETTING[type];
   if (settingKey && !settings[settingKey]) return false;
   if (dedupeKey && alreadySent(dedupeKey)) return false;
 
   const now = new Date();
-  const quiet = !settings.night && isNight(now) && (type === "lowest" || type === "target" || type === "restock");
+  const quiet =
+    !settings.night &&
+    isNight(now) &&
+    (type === "lowest" || type === "target" || type === "restock" || type === "survey");
   // 조용한 시간에는 시스템 알림 없이 목록에만 쌓았다가, 다음 확인 때 다시 보내지 않도록 기록합니다.
-  if (dedupeKey) markSent(dedupeKey);
+  if (dedupeKey) {
+    if (once) markSentOnce(dedupeKey);
+    else markSent(dedupeKey);
+  }
 
   const item: AppNotification = {
     id: `${now.getTime()}-${Math.random().toString(36).slice(2, 7)}`,

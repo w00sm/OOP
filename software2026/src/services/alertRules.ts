@@ -12,6 +12,7 @@ export type AlertMessage = {
   title: string;
   body: string;
   dedupeKey: string;
+  once?: boolean; // 날짜가 바뀌어도 한 번만 (재구매·설문은 한 통당 한 번)
 };
 
 // 알림 판단에 필요한 영양제 정보 (앱 Supplement와 Firestore 저장 형태 모두 맞음)
@@ -23,9 +24,11 @@ export type AlertSupplement = {
   checked: boolean;
   stock?: number | null;
   dailyDose?: number;
+  stockUpdatedAt?: string | null; // 잔여량을 새로 채운 시각 (한 통 = 한 주기, 알림을 주기마다 한 번씩 보내는 기준)
 };
 
-export const RESTOCK_DAYS = 7; // 이 날짜 이하로 남으면 재구매 알림
+export const RESTOCK_DAYS = 7; // 이 날짜 이하로 남으면 재구매 알림 (1차)
+export const RESTOCK_URGENT_DAYS = 3; // 이 날짜 이하로 남으면 한 번 더 (2차)
 export const DOSE_WINDOW_MINUTES = 60; // 복용 시간이 지나고 이 시간 안에만 알림 (늦게 열었을 때 옛날 알림 방지)
 
 const toMinutes = (time: string) => {
@@ -55,23 +58,48 @@ export function daysLeftOf(item: AlertSupplement) {
   return Math.floor(item.stock / perDay);
 }
 
-// 재구매 알림: 남은 양이 7일분 이하
+const cycleOf = (item: AlertSupplement) => item.stockUpdatedAt ?? "0";
+
+// 재구매 알림: 7일 안에 떨어질 때 한 번, 3일 안에 떨어질 때 한 번 더 (한 통당 각각 한 번)
 export function restockAlerts(supplements: AlertSupplement[]): AlertMessage[] {
-  return supplements.flatMap((item) => {
+  return supplements.flatMap((item): AlertMessage[] => {
     const days = daysLeftOf(item);
-    if (days === null || days > RESTOCK_DAYS) return [];
+    if (days === null || days <= 0 || days > RESTOCK_DAYS) return [];
+    const name = josa(item.name, "이/가");
+    if (days <= RESTOCK_URGENT_DAYS) {
+      return [
+        {
+          type: "restock",
+          title: "재구매 알림 (3일 전)",
+          body: `${name} ${days}일분밖에 안 남았어요! 지금 주문하지 않으면 복용이 끊길 수 있어요.`,
+          dedupeKey: `restock3-${item.id}-${cycleOf(item)}`,
+          once: true,
+        },
+      ];
+    }
     return [
       {
-        type: "restock" as const,
+        type: "restock",
         title: "재구매 알림",
-        body:
-          days <= 0
-            ? `${josa(item.name, "이/가")} 다 떨어졌어요. 재구매가 필요해요.`
-            : `${josa(item.name, "이/가")} 약 ${days}일분 남았어요. 지금 주문하면 끊기지 않고 드실 수 있어요.`,
-        dedupeKey: `restock-${item.id}`,
+        body: `${name} 약 ${days}일 뒤에 떨어져요. 미리 주문해 두세요.`,
+        dedupeKey: `restock7-${item.id}-${cycleOf(item)}`,
+        once: true,
       },
     ];
   });
+}
+
+// 설문 알림: 한 통을 다 비우면 (잔여량 0) 효과·변화를 묻는 설문 요청 (한 통당 한 번)
+export function surveyAlerts(supplements: AlertSupplement[]): AlertMessage[] {
+  return supplements
+    .filter((item) => item.stock === 0)
+    .map((item) => ({
+      type: "survey",
+      title: "한 통 다 드셨어요!",
+      body: `${josa(item.name, "은/는")} 어떠셨나요? 간단한 설문에 답하면 다음 영양제를 맞춤 추천해 드려요.`,
+      dedupeKey: `survey-${item.id}-${cycleOf(item)}`,
+      once: true,
+    }));
 }
 
 // 최저가·목표가 알림: 찜 목록 상품 가격 확인

@@ -9,10 +9,12 @@
   margin-bottom: 30px;
 }
 
+/* 글자 두께 체계 (다른 탭과 통일): 페이지 제목 800 · 카드 제목 700 · 본문 400 · 버튼 800 */
 .mypage-header h1 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
   color: #05070a;
 }
 
@@ -53,7 +55,7 @@
 .mypage-profile-name {
   margin-bottom: 6px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 800;
   color: #05070a;
 }
 
@@ -79,6 +81,7 @@
   justify-content: space-between;
   color: #05070a;
   font-size: 14px;
+  font-weight: 700;
 }
 
 .mypage-menu-left {
@@ -112,7 +115,7 @@
   background: white;
   color: #ef233c;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .mypage-sub-header {
@@ -124,8 +127,8 @@
 
 .mypage-sub-header h1 {
   margin: 0 auto;
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 20px;
+  font-weight: 800;
   color: #05070a;
 }
 
@@ -192,7 +195,7 @@
   background: #f3f3f3;
   color: #05070a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .mypage-gender-buttons button.active {
@@ -208,7 +211,7 @@
   background: #a7d957;
   color: #05070a;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .alarm-card {
@@ -298,7 +301,7 @@
 .notification-top h2 {
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: #05070a;
   line-height: 1.35;
 }

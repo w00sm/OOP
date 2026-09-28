@@ -259,3 +259,32 @@
 .consult-complete-button:disabled {
   opacity: 0.6;
 }
+
+/* ---------- 복용 중인 영양제를 고려한 섭취량 안내 ---------- */
+.recommend-result-item strong.dose-enough,
+.recommend-result-item strong.dose-info {
+  color: #6f7b78;
+}
+
+.recommend-result-item strong.dose-over {
+  color: #dc2626;
+}
+
+.recommend-result-item p.intake-advice {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f3fbe7;
+  color: #3f6e12;
+}
+
+.recommend-result-item p.intake-advice.enough,
+.recommend-result-item p.intake-advice.info {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.recommend-result-item p.intake-advice.over {
+  background: #fef2f2;
+  color: #b91c1c;
+}

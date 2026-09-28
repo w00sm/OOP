@@ -12,6 +12,7 @@ import {
   doseAlerts,
   priceAlerts,
   restockAlerts,
+  surveyAlerts,
   type AlertMessage,
   type AlertSupplement,
 } from "../src/services/alertRules";
@@ -26,8 +27,9 @@ export type UserDoc = {
   settings?: Partial<NotificationSettings>;
   timeZone?: string;
   syncedDate?: string;
-  clientSent?: { date: string; keys: string[] };
+  clientSent?: { date: string; keys: string[]; onceKeys?: string[] };
   pushSent?: { date: string; keys: string[] };
+  pushSentOnce?: string[]; // 날짜와 상관없이 한 번만 보낸 알림 (재구매 7일·3일, 설문)
 };
 
 const DRY_RUN = process.env.DRY_RUN === "1";
@@ -75,7 +77,7 @@ export async function alertsFor(user: UserDoc) {
   if (settings.schedule) alerts.push(...doseAlerts(supplements, now.minutes));
   // 조용한 시간에는 가격·재구매 알림을 보내지 않고 아침에 보냅니다.
   if (!isNight || settings.night) {
-    if (settings.restock) alerts.push(...restockAlerts(supplements));
+    if (settings.restock) alerts.push(...restockAlerts(supplements), ...surveyAlerts(supplements));
     if (settings.price && user.wishlist?.length) {
       const products = await getProductsByIds(user.wishlist.map((item) => item.productId));
       alerts.push(...priceAlerts(user.wishlist, products));
@@ -86,6 +88,8 @@ export async function alertsFor(user: UserDoc) {
   const sent = new Set([
     ...(user.pushSent?.date === now.date ? user.pushSent.keys : []),
     ...(user.clientSent?.date === now.date ? user.clientSent.keys : []),
+    ...(user.pushSentOnce ?? []),
+    ...(user.clientSent?.onceKeys ?? []),
   ]);
   return { alerts: alerts.filter((alert) => !sent.has(alert.dedupeKey)), date: now.date };
 }
@@ -132,9 +136,14 @@ async function main() {
 
     if (DRY_RUN) continue;
     const previous = user.pushSent?.date === date ? user.pushSent.keys : [];
+    const onceKeys = alerts.filter((alert) => alert.once).map((alert) => alert.dedupeKey);
     await doc.ref.set(
       {
-        pushSent: { date, keys: [...previous, ...alerts.map((alert) => alert.dedupeKey)] },
+        pushSent: {
+          date,
+          keys: [...previous, ...alerts.filter((alert) => !alert.once).map((alert) => alert.dedupeKey)],
+        },
+        ...(onceKeys.length > 0 && { pushSentOnce: FieldValue.arrayUnion(...onceKeys) }),
         // 앱을 지웠거나 알림을 끈 기기의 토큰은 정리
         ...(invalidTokens.size > 0 && { tokens: FieldValue.arrayRemove(...invalidTokens) }),
       },

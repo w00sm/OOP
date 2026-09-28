@@ -3,9 +3,17 @@ import NotificationBell from "../NotificationBell";
 import { SendHorizontal, Sparkles } from "lucide-react";
 import { getOpenAI, hasOpenAIKey } from "../../services/openaiClient";
 import { findConcerns, recommend } from "../../services/recommendService";
+import {
+  adviseIntake,
+  describeCurrentSupplements,
+  type IntakeAdvice,
+} from "../../services/intakeService";
+import { describeSurveys } from "../../services/surveyService";
+import type { Supplement } from "../Home";
 import "../styles/RecommendTab.css";
 
 type RecommendTabProps = {
+  supplements: Supplement[]; // 복용 관리 중인 영양제 (섭취량 계산에 사용)
   onOpenNotification: () => void;
   onSearch: (keyword: string) => void;
   onRecommend: (ingredients: string[]) => void; // 추천 성분 전체로 검색탭 열기
@@ -41,6 +49,7 @@ export default function RecommendTab({
   onOpenNotification,
   onSearch,
   onRecommend,
+  supplements,
 }: RecommendTabProps) {
   const currentYear = new Date().getFullYear();
 
@@ -129,6 +138,8 @@ export default function RecommendTab({
 사용자 정보:
 ${age ? `- 출생년도: ${age}` : ""}
 ${gender ? `- 성별: ${gender}` : ""}
+- 현재 복용 중인 영양제: ${describeCurrentSupplements(supplements)}
+${describeSurveys() ? `- 지난 영양제 설문 결과: ${describeSurveys()}` : ""}
 
 이 정보를 참고해서 이후 상담에 반영해주세요.
 `,
@@ -186,7 +197,7 @@ ${gender ? `- 성별: ${gender}` : ""}
           {
             role: "system",
             content:
-              '당신은 전문 영양사입니다. 지금까지의 상담 내용을 바탕으로 사용자에게 필요해 보이는 영양 성분과 일반적인 권장 용량을 정리하세요. 반드시 JSON만 반환하세요. 형식은 {"items":[{"name":"비타민D","dose":"1000~2000IU"},{"name":"마그네슘","dose":"200~400mg"}]} 입니다. 제품명보다 영양 성분명을 우선 사용하고, 과장하거나 질병 치료처럼 표현하지 마세요.',
+              '당신은 전문 영양사입니다. 지금까지의 상담 내용을 바탕으로 사용자에게 필요해 보이는 영양 성분과 일반적인 권장 용량을 정리하세요. 반드시 JSON만 반환하세요. 형식은 {"items":[{"name":"비타민D","dose":"1000~2000IU"},{"name":"마그네슘","dose":"200~400mg"}]} 입니다. 제품명보다 영양 성분명을 우선 사용하고, 과장하거나 질병 치료처럼 표현하지 마세요. 사용자가 이미 복용 중인 영양제에 든 성분은 중복을 고려해 용량을 줄이거나 제외하고, 지난 설문에서 효과가 없었던 성분은 우선순위를 낮추세요.',
           },
           {
             role: "user",
@@ -194,6 +205,8 @@ ${gender ? `- 성별: ${gender}` : ""}
 사용자 정보:
 ${age ? `- 출생년도: ${age}` : ""}
 ${gender ? `- 성별: ${gender}` : ""}
+- 현재 복용 중인 영양제: ${describeCurrentSupplements(supplements)}
+${describeSurveys() ? `- 지난 영양제 설문 결과: ${describeSurveys()}` : ""}
 
 상담 내용:
 ${realConversation
@@ -256,8 +269,28 @@ ${realConversation
       }
     }
 
-    onRecommend(items.map((item) => item.name));
+    // 이미 충분히 먹고 있는 성분은 빼고 상품을 찾습니다. (전부 충분하면 그대로)
+    const needed = items.filter((item) => {
+      const status = adviseIntake(item.name, supplements)?.status;
+      return status !== "enough" && status !== "over";
+    });
+    onRecommend((needed.length > 0 ? needed : items).map((item) => item.name));
   };
+
+  // 추천 성분마다 복용 중인 영양제를 고려한 섭취량 안내 (부족한 성분 → 충분한 성분 순)
+  const STATUS_ORDER: Record<IntakeAdvice["status"], number> = {
+    none: 0,
+    partial: 1,
+    info: 2,
+    enough: 3,
+    over: 4,
+  };
+  const recommendationsWithAdvice = recommendedList
+    .map((item) => ({ item, advice: adviseIntake(item.name, supplements) }))
+    .sort(
+      (a, b) =>
+        STATUS_ORDER[a.advice?.status ?? "info"] - STATUS_ORDER[b.advice?.status ?? "info"]
+    );
 
   return (
     <>
@@ -375,9 +408,13 @@ ${realConversation
         {recommendedList.length > 0 && (
           <div className="recommend-result-box">
             <h3>추천 영양 성분</h3>
-            <p className="recommend-hint">성분을 누르면 상품을 검색해요</p>
+            <p className="recommend-hint">
+              {supplements.length > 0
+                ? `복용 중인 영양제 ${supplements.length}개를 고려한 섭취량이에요. 성분을 누르면 상품을 검색해요`
+                : "성분을 누르면 상품을 검색해요"}
+            </p>
 
-            {recommendedList.map((item, index) => (
+            {recommendationsWithAdvice.map(({ item, advice }, index) => (
               <button
                 type="button"
                 className="recommend-result-item"
@@ -386,8 +423,11 @@ ${realConversation
               >
                 <div className="recommend-result-row">
                   <span>{item.name}</span>
-                  <strong>{item.dose || "상품 보기 →"}</strong>
+                  <strong className={advice ? `dose-${advice.status}` : ""}>
+                    {advice?.doseLabel ?? (item.dose || "상품 보기 →")}
+                  </strong>
                 </div>
+                {advice && <p className={`intake-advice ${advice.status}`}>{advice.message}</p>}
                 {item.reason && <p>{item.reason}</p>}
               </button>
             ))}

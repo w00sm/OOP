@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  ClipboardCheck,
   Lightbulb,
   Moon,
   Package,
+  Pencil,
   Sun,
   Sunrise,
   Trash2,
@@ -19,13 +21,17 @@ import {
   suggestSchedule,
   timeToCategory,
 } from "../../services/scheduleService";
+import { pendingSurveys, type SurveyAction } from "../../services/surveyService";
 import { josa } from "../../utils/josa";
+import SurveyModal from "../SurveyModal";
 import "../styles/HomeTab.css";
 
 type HomeTabProps = {
   supplements: Supplement[];
   setSupplements: Dispatch<SetStateAction<Supplement[]>>;
   onOpenNotification: () => void;
+  onSearch: (keyword: string) => void; // 설문 결과: 같은 성분 제품 보기
+  onRecommend: (ingredients: string[]) => void; // 설문 결과: 다른 성분 추천 보기
 };
 
 type DailyRecordItem = {
@@ -51,6 +57,8 @@ export default function HomeTab({
   supplements,
   setSupplements,
   onOpenNotification,
+  onSearch,
+  onRecommend,
 }: HomeTabProps) {
   const today = new Date();
   const calendarYear = today.getFullYear();
@@ -66,6 +74,10 @@ export default function HomeTab({
   const [newDailyDose, setNewDailyDose] = useState("1");
   const [scheduleNotice, setScheduleNotice] = useState<{ title: string; reasons: string[] } | null>(null);
   const [editingTimeId, setEditingTimeId] = useState<number | null>(null);
+  const [editingStockId, setEditingStockId] = useState<number | null>(null);
+  const [stockInput, setStockInput] = useState("");
+  const [doseInput, setDoseInput] = useState("1");
+  const [surveyTargetId, setSurveyTargetId] = useState<number | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const [storageTips, setStorageTips] = useState<StorageTip[]>([]);
@@ -136,6 +148,7 @@ export default function HomeTab({
       checked: false,
       stock: newStock.trim() !== "" && stock >= 0 ? stock : undefined,
       dailyDose: dailyDose > 0 ? dailyDose : 1,
+      stockUpdatedAt: newStock.trim() !== "" ? new Date().toISOString() : undefined,
     };
 
     setSupplements((prev) => [...prev, newItem]);
@@ -155,7 +168,18 @@ export default function HomeTab({
   };
 
   // 복용 체크 시 남은 수량을 하루 복용량만큼 줄이고, 체크 해제하면 되돌립니다.
+  // 이번 체크로 한 통을 다 비우면(잔여량 0) 설문을 띄웁니다.
   const toggleCheck = (id: number) => {
+    const target = supplements.find((item) => item.id === id);
+    if (
+      target &&
+      !target.checked &&
+      target.stock !== undefined &&
+      target.stock > 0 &&
+      target.stock - (target.dailyDose ?? 1) <= 0
+    ) {
+      setSurveyTargetId(id);
+    }
     setSupplements((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
@@ -183,6 +207,49 @@ export default function HomeTab({
   const removeSupplement = (id: number) => {
     setSupplements((prev) => prev.filter((item) => item.id !== id));
   };
+
+  const startEditStock = (item: Supplement) => {
+    setEditingStockId(item.id);
+    setStockInput(item.stock === undefined ? "" : String(item.stock));
+    setDoseInput(String(item.dailyDose ?? 1));
+  };
+
+  // 잔여량 직접 수정. 늘어나면 새 통을 채운 것으로 보고 재구매·설문 알림 주기를 새로 시작합니다.
+  const saveStock = (id: number) => {
+    const stock = Number(stockInput);
+    const dose = Number(doseInput);
+    setSupplements((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const nextStock = stockInput.trim() !== "" && stock >= 0 ? Math.floor(stock) : undefined;
+        const refilled =
+          nextStock !== undefined && (item.stock === undefined || nextStock > item.stock);
+        return {
+          ...item,
+          stock: nextStock,
+          dailyDose: dose > 0 ? Math.floor(dose) : 1,
+          stockUpdatedAt: refilled ? new Date().toISOString() : item.stockUpdatedAt,
+        };
+      })
+    );
+    setEditingStockId(null);
+  };
+
+  const handleSurveyAction = (action: SurveyAction) => {
+    const target = supplements.find((item) => item.id === surveyTargetId);
+    setSurveyTargetId(null);
+    if (action.kind === "search") onSearch(action.keyword);
+    if (action.kind === "recommend") onRecommend(action.ingredients);
+    if (action.kind === "refill" && target) {
+      setSelectedTime(target.timeCategory);
+      setHomeView("일정");
+      startEditStock(target);
+    }
+    if (action.kind === "remove" && target) removeSupplement(target.id);
+  };
+
+  const surveysToDo = pendingSurveys(supplements);
+  const surveyTarget = supplements.find((item) => item.id === surveyTargetId);
 
   const loadStorageTips = async () => {
     if (supplements.length === 0) {
@@ -338,7 +405,7 @@ export default function HomeTab({
           </div>
           <p className="add-form-hint">
             복용 시간은 함께 먹는 영양제와의 궁합을 따져 자동으로 정해져요.
-            남은 개수를 입력하면 7일분 이하일 때 재구매 알림을 보내드려요.
+            남은 개수를 입력하면 떨어지기 7일 전과 3일 전에 재구매 알림을 보내드려요.
           </p>
 
           <button onClick={addSupplement}>추가하기</button>
@@ -362,6 +429,30 @@ export default function HomeTab({
             <X size={16} />
           </button>
         </div>
+      )}
+
+      {surveysToDo.map((item) => (
+        <button
+          type="button"
+          key={item.id}
+          className="survey-prompt"
+          onClick={() => setSurveyTargetId(item.id)}
+        >
+          <ClipboardCheck size={20} />
+          <span>
+            <strong>{josa(item.name, "을/를")} 다 드셨어요</strong>
+            효과는 어땠나요? 설문하고 맞춤 추천 받기
+          </span>
+        </button>
+      ))}
+
+      {surveyTarget && (
+        <SurveyModal
+          supplement={surveyTarget}
+          supplements={supplements}
+          onClose={() => setSurveyTargetId(null)}
+          onAction={handleSurveyAction}
+        />
       )}
 
       <div className="tabs">
@@ -456,12 +547,66 @@ export default function HomeTab({
                     </button>
                   </div>
 
-                  {left !== null && (
-                    <div className={`card-stock ${left <= 7 ? "low" : ""}`}>
-                      <Package size={14} />
-                      남은 {item.stock}개 · 약 {left}일분
-                      {left <= 7 && " · 재구매 필요"}
+                  {editingStockId === item.id ? (
+                    <div className="stock-editor">
+                      <label>
+                        남은 개수
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          autoFocus
+                          value={stockInput}
+                          onChange={(e) => setStockInput(e.target.value)}
+                          placeholder="예: 60"
+                        />
+                      </label>
+                      <label>
+                        하루 복용
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="1"
+                          value={doseInput}
+                          onChange={(e) => setDoseInput(e.target.value)}
+                        />
+                      </label>
+                      <div className="stock-editor-buttons">
+                        <button type="button" onClick={() => setEditingStockId(null)}>
+                          취소
+                        </button>
+                        <button
+                          type="button"
+                          className="save"
+                          onClick={() => saveStock(item.id)}
+                        >
+                          저장
+                        </button>
+                      </div>
                     </div>
+                  ) : left !== null ? (
+                    <button
+                      type="button"
+                      className={`card-stock ${left <= 7 ? "low" : ""}`}
+                      aria-label="잔여량 수정"
+                      onClick={() => startEditStock(item)}
+                    >
+                      <Package size={14} />
+                      <span>
+                        남은 {item.stock}개 · 하루 {item.dailyDose ?? 1}개 · 약 {left}일분
+                        {left === 0 ? " · 다 드셨어요" : left <= 7 ? " · 재구매 필요" : ""}
+                      </span>
+                      <Pencil size={12} className="stock-edit-icon" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="card-stock empty"
+                      onClick={() => startEditStock(item)}
+                    >
+                      <Package size={14} />
+                      <span>잔여량 입력하고 재구매 알림 받기</span>
+                    </button>
                   )}
 
                   {conflict && (
