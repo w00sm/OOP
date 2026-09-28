@@ -63,6 +63,17 @@ const cycleOf = (item: AlertSupplement) => item.stockUpdatedAt ?? "0";
 const daysFor = (stock: number, item: AlertSupplement) =>
   Math.floor(stock / (item.dailyDose && item.dailyDose > 0 ? item.dailyDose : 1));
 
+// 체크를 풀어 잔여량이 기준보다 다시 많아졌을 때, 지울 '한 번만' 알림 기록
+// (체크 해제 = 안 먹은 걸로 되돌리기 → 다시 체크하면 7일·3일 알림을 또 보냄)
+export function stockAlertKeysToForget(item: AlertSupplement): string[] {
+  if (item.stock === undefined || item.stock === null) return [];
+  const days = daysFor(item.stock, item);
+  const keys: string[] = [];
+  if (days > RESTOCK_DAYS) keys.push(`restock7-${item.id}-${cycleOf(item)}`);
+  if (days > RESTOCK_URGENT_DAYS) keys.push(`restock3-${item.id}-${cycleOf(item)}`);
+  return keys;
+}
+
 // 복용 체크로 잔여량이 줄었을 때 보내는 알림 (체크하는 순간 기준을 넘으면 한 번)
 // - 7일분 이하가 되면: 재구매 알림
 // - 3일분 이하가 되면: 한 번 더 (3일 전)

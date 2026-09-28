@@ -4,7 +4,7 @@
 // - 알림을 누르면 열려 있는 앱 창으로 이동하거나 새로 엽니다.
 // - 서버 푸시(FCM)를 붙일 때 push 이벤트 처리도 이 파일에 추가합니다.
 
-const CACHE_NAME = "fitvita-v5";
+const CACHE_NAME = "fitvita-v6";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
@@ -85,6 +85,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title || "Fit Vita", {
       body: data.body || "",
       tag: data.tag || undefined,
+      renotify: Boolean(data.tag),
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       data: { url: "/" },

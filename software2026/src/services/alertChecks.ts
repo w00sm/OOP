@@ -4,8 +4,14 @@
 
 import type { Supplement } from "../components/Home";
 import type { WishItem } from "../hooks/useWishlist";
-import { doseAlerts, priceAlerts, stockAlertsOnCheck, type AlertMessage } from "./alertRules";
-import { notify } from "./notificationService";
+import {
+  doseAlerts,
+  priceAlerts,
+  stockAlertKeysToForget,
+  stockAlertsOnCheck,
+  type AlertMessage,
+} from "./alertRules";
+import { forgetSentOnce, notify } from "./notificationService";
 import { getProductsByIds } from "./productService";
 
 async function send(alerts: AlertMessage[]) {
@@ -14,6 +20,11 @@ async function send(alerts: AlertMessage[]) {
 
 export async function checkDoseReminders(supplements: Supplement[], now = new Date()) {
   await send(doseAlerts(supplements, now.getHours() * 60 + now.getMinutes()));
+}
+
+// 체크를 풀어 잔여량이 돌아왔을 때: 그 기준의 알림 기록을 지워 다시 체크하면 또 알림
+export function forgetStockAlerts(item: Supplement) {
+  forgetSentOnce(stockAlertKeysToForget(item));
 }
 
 // 복용 체크로 잔여량이 줄었을 때 (재구매 7일·3일 전, 다 먹으면 설문)

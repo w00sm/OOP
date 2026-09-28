@@ -23,7 +23,7 @@ import {
   timeToCategory,
   withTiming,
 } from "../../services/scheduleService";
-import { notifyStockChange } from "../../services/alertChecks";
+import { forgetStockAlerts, notifyStockChange } from "../../services/alertChecks";
 import { type SurveyAction } from "../../services/surveyService";
 import {
   recordFinished,
@@ -214,6 +214,9 @@ export default function HomeTab({
         return;
       }
     }
+
+    // 체크 해제로 잔여량이 돌아오면 알림 기록도 되돌림 (다시 체크하면 또 알림)
+    if (!checked && target.stock !== undefined) forgetStockAlerts(updated);
 
     setSupplements((prev) => prev.map((item) => (item.id === id ? updated : item)));
   };

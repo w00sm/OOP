@@ -156,6 +156,13 @@ export function getSentOnceKeys(): string[] {
   return readArray<string>(SENT_ONCE_KEY);
 }
 
+// 한 번만 보내는 알림 기록 지우기 (체크를 풀어 잔여량이 다시 늘었을 때 → 다시 체크하면 또 보냄)
+export function forgetSentOnce(dedupeKeys: string[]) {
+  const keys = getSentOnceKeys();
+  const next = keys.filter((key) => !dedupeKeys.includes(key));
+  if (next.length !== keys.length) write(SENT_ONCE_KEY, next);
+}
+
 function markSentOnce(dedupeKey: string) {
   write(SENT_ONCE_KEY, [...getSentOnceKeys(), dedupeKey].slice(-MAX_ONCE_KEYS));
 }
@@ -170,9 +177,11 @@ const isNight = (date: Date) => date.getHours() >= 22 || date.getHours() < 8;
 
 async function showSystemNotification(title: string, body: string, tag: string) {
   if (getPermission() !== "granted") return;
-  const options: NotificationOptions = {
+  // renotify: 같은 tag의 알림이 알림창에 남아 있어도 조용히 덮어쓰지 않고 다시 소리·진동을 냄
+  const options: NotificationOptions & { renotify?: boolean } = {
     body,
     tag,
+    renotify: true,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
   };
