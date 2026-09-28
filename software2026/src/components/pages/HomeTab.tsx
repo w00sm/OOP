@@ -246,15 +246,15 @@ export default function HomeTab({
     setStockInput(item.stock === undefined ? "" : String(item.stock));
   };
 
-  // 잔여량 직접 수정. 늘어나면 새 통을 채운 것으로 보고 재구매·설문 알림 주기를 새로 시작합니다.
+  // 잔여량 직접 수정. 저장하면 새로 세팅한 것으로 보고 재구매·설문 알림 주기를 새로 시작합니다.
   const saveStock = (id: number) => {
     const stock = Number(stockInput);
     setSupplements((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
         const nextStock = stockInput.trim() !== "" && stock >= 0 ? Math.floor(stock) : undefined;
-        const refilled =
-          nextStock !== undefined && (item.stock === undefined || nextStock > item.stock);
+        // 잔여량을 직접 입력해 저장하면 (같은 값이어도) 새로 세팅한 것으로 보고 7일·3일 알림을 다시 받을 수 있게 함
+        const refilled = nextStock !== undefined;
         return {
           ...item,
           stock: nextStock,
