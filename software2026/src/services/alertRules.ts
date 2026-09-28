@@ -79,7 +79,7 @@ export function stockAlertsOnCheck(item: AlertSupplement, previousStock: number)
       {
         type: "survey",
         title: "한 통 다 드셨어요!",
-        body: `${josa(item.name, "은/는")} 어떠셨나요? 간단한 설문에 답하면 다음 영양제를 맞춤 추천해 드려요.`,
+        body: `${josa(item.name, "을/를")} 다 드셔서 복용 내역에 기록했어요. 마이페이지 → 복용 내역에서 설문하고 재구매가 필요한지 확인해 보세요.`,
         dedupeKey: `survey-${item.id}-${cycleOf(item)}`,
         once: true,
       },

@@ -4,10 +4,14 @@ import {
   Bell,
   ChevronLeft,
   ChevronRight,
+  History,
   Megaphone,
   UserRound,
 } from "lucide-react";
 import GoogleLoginButton from "../GoogleLoginButton";
+import IntakeHistory from "../IntakeHistory";
+import type { Supplement } from "../Home";
+import type { HistoryEntry } from "../../services/historyService";
 import { useNotifications } from "../../hooks/useNotifications";
 import {
   notify,
@@ -32,7 +36,7 @@ const PUSH_STATUS_TEXT: Record<PushStatus, string> = {
 };
 import "../styles/MyPageTab.css";
 
-type MyPageView = "main" | "info" | "alarm" | "notice";
+type MyPageView = "main" | "history" | "info" | "alarm" | "notice";
 
 type Notice = {
   id: number;
@@ -49,9 +53,19 @@ type LoginUser = {
 
 type MyPageTabProps = {
   onOpenNotification: () => void;
+  supplements: Supplement[];
+  onSearch: (keyword: string) => void;
+  onRecommend: (ingredients: string[]) => void;
+  onReAdd: (entry: HistoryEntry) => void; // 복용 내역의 영양제를 다시 복용 관리에 추가
 };
 
-export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
+export default function MyPageTab({
+  onOpenNotification,
+  supplements,
+  onSearch,
+  onRecommend,
+  onReAdd,
+}: MyPageTabProps) {
   const currentYear = new Date().getFullYear();
 
   const [myPageView, setMyPageView] = useState<MyPageView>("main");
@@ -268,6 +282,18 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
             <button
               type="button"
               className="mypage-menu-item"
+              onClick={() => setMyPageView("history")}
+            >
+              <span className="mypage-menu-left">
+                <span className="mypage-menu-icon"><History size={18} /></span>
+                복용 내역
+              </span>
+              <span className="mypage-menu-arrow"><ChevronRight size={20} /></span>
+            </button>
+
+            <button
+              type="button"
+              className="mypage-menu-item"
               onClick={() => setMyPageView("info")}
             >
               <span className="mypage-menu-left">
@@ -463,6 +489,16 @@ export default function MyPageTab({ onOpenNotification }: MyPageTabProps) {
             테스트 알림 보내기
           </button>
         </>
+      )}
+
+      {myPageView === "history" && (
+        <IntakeHistory
+          supplements={supplements}
+          onBack={goMain}
+          onSearch={onSearch}
+          onRecommend={onRecommend}
+          onReAdd={onReAdd}
+        />
       )}
 
       {myPageView === "notice" && (

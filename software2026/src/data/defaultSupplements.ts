@@ -24,7 +24,7 @@ function withDemoStock(item: Supplement): Supplement {
   if (stock === undefined || DEMO_NAMES[item.id] !== item.name || item.stock !== undefined) {
     return item;
   }
-  return { ...item, stock, dailyDose: 1, stockUpdatedAt: new Date().toISOString() };
+  return { ...item, stock, stockInitial: stock, dailyDose: 1, stockUpdatedAt: new Date().toISOString() };
 }
 
 // 이미 앱을 쓰던 기기에도 예시 영양제 잔여량을 한 번만 채워 줍니다. (직접 입력한 잔여량은 그대로)

@@ -14,6 +14,7 @@ import {
   markDemoStockSeeded,
   seedDemoStockOnce,
 } from "../data/defaultSupplements";
+import { recordFinished, supplementFromHistory, type HistoryEntry } from "../services/historyService";
 import LoadingScreen from "./LoadingScreen";
 import { useAlertScheduler } from "../hooks/useAlertScheduler";
 import { useCloudSync } from "../hooks/useCloudSync";
@@ -34,6 +35,7 @@ export type Supplement = {
   stock?: number; // 남은 개수 (정·캡슐·포). 입력하면 재구매 알림에 사용
   dailyDose?: number; // 하루 복용 개수 (기본 1)
   stockUpdatedAt?: string; // 잔여량을 새로 채운 시각 (한 통 단위로 재구매·설문 알림을 한 번씩 보내는 기준)
+  stockInitial?: number; // 이 통을 채울 때의 잔여량 (복용 내역에 총 복용량으로 기록)
 };
 
 export default function Home() {
@@ -48,7 +50,7 @@ export default function Home() {
   const [supplements, setSupplements] = useState<Supplement[]>(() => {
     try {
       const saved = localStorage.getItem("supplements");
-      if (saved) return seedDemoStockOnce(JSON.parse(saved));
+      if (saved) return moveFinishedToHistory(seedDemoStockOnce(JSON.parse(saved)));
     } catch {
       // 저장된 값을 읽지 못하면 기본값으로 시작
     }
@@ -69,6 +71,12 @@ export default function Home() {
   const closeAlarmPage = () => {
     markAllRead();
     setShowNotificationPage(false);
+  };
+
+  // 복용 내역의 영양제를 다시 복용 관리에 추가하고 홈으로 이동 (잔여량은 새 통을 산 뒤 입력)
+  const reAddFromHistory = (entry: HistoryEntry) => {
+    setSupplements((prev) => [...prev, supplementFromHistory(entry)]);
+    setActiveTab("홈");
   };
 
   // 추천탭에서 성분을 누르면 그 성분으로 검색탭을 엽니다.
@@ -123,7 +131,13 @@ export default function Home() {
       )}
 
       {activeTab === "마이페이지" && (
-        <MyPageTab onOpenNotification={openAlarmPage} />
+        <MyPageTab
+          onOpenNotification={openAlarmPage}
+          supplements={supplements}
+          onSearch={goToSearch}
+          onRecommend={goToRecommendedSearch}
+          onReAdd={reAddFromHistory}
+        />
       )}
 
       {showNotificationPage && (
@@ -245,4 +259,11 @@ export default function Home() {
       </div>
     </div>
   );
+}
+
+// 예전 버전에서 잔여량 0인 채로 남아 있던 영양제는 복용 내역으로 옮깁니다. (여러 번 실행돼도 같은 통은 한 번만 기록)
+function moveFinishedToHistory(list: Supplement[]) {
+  const finished = list.filter((item) => item.stock === 0);
+  finished.forEach(recordFinished);
+  return finished.length > 0 ? list.filter((item) => item.stock !== 0) : list;
 }

@@ -24,7 +24,13 @@ import {
   withTiming,
 } from "../../services/scheduleService";
 import { notifyStockChange } from "../../services/alertChecks";
-import { pendingSurveys, type SurveyAction } from "../../services/surveyService";
+import { type SurveyAction } from "../../services/surveyService";
+import {
+  recordFinished,
+  removeHistoryEntry,
+  supplementFromHistory,
+  type HistoryEntry,
+} from "../../services/historyService";
 import { josa } from "../../utils/josa";
 import SurveyModal from "../SurveyModal";
 import "../styles/HomeTab.css";
@@ -79,7 +85,9 @@ export default function HomeTab({
   const [editingTimeId, setEditingTimeId] = useState<number | null>(null);
   const [editingStockId, setEditingStockId] = useState<number | null>(null);
   const [stockInput, setStockInput] = useState("");
-  const [surveyTargetId, setSurveyTargetId] = useState<number | null>(null);
+  // 방금 다 먹어서 복용 내역으로 옮긴 영양제 (되돌리기용으로 원래 상태도 보관)
+  const [finished, setFinished] = useState<{ entry: HistoryEntry; restore: Supplement } | null>(null);
+  const [surveyEntry, setSurveyEntry] = useState<HistoryEntry | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const [storageTips, setStorageTips] = useState<StorageTip[]>([]);
@@ -163,6 +171,7 @@ export default function HomeTab({
       stock: newStock.trim() !== "" && stock >= 0 ? Math.floor(stock) : undefined,
       dailyDose: dose.amount, // 하루 한 번 복용 기준, 체크할 때마다 이만큼 잔여량이 줄어듦
       stockUpdatedAt: newStock.trim() !== "" ? new Date().toISOString() : undefined,
+      stockInitial: newStock.trim() !== "" && stock >= 0 ? Math.floor(stock) : undefined,
     };
 
     setSupplements((prev) => [...prev, newItem]);
@@ -193,13 +202,29 @@ export default function HomeTab({
         : Math.max(0, target.stock + (checked ? -dose : dose));
     const updated: Supplement = { ...target, checked, stock };
 
-    setSupplements((prev) => prev.map((item) => (item.id === id ? updated : item)));
-
     if (checked && target.stock !== undefined) {
       // 이번 체크로 7일분·3일분·0 기준을 넘으면 알림 (재구매 / 다 먹었으면 설문)
       notifyStockChange(updated, target.stock);
-      if (target.stock > 0 && stock === 0) setSurveyTargetId(id);
+
+      // 다 먹었으면 복용 관리에서 빼고 복용 내역에 기록
+      if (target.stock > 0 && stock === 0) {
+        const entry = recordFinished(updated);
+        setSupplements((prev) => prev.filter((item) => item.id !== id));
+        setFinished({ entry, restore: target });
+        return;
+      }
     }
+
+    setSupplements((prev) => prev.map((item) => (item.id === id ? updated : item)));
+  };
+
+  // 실수로 체크했을 때: 복용 내역에서 지우고 복용 관리로 되돌림
+  const undoFinished = () => {
+    if (!finished) return;
+    removeHistoryEntry(finished.entry.id);
+    setSupplements((prev) => [...prev, finished.restore]);
+    setSelectedTime(finished.restore.timeCategory);
+    setFinished(null);
   };
 
   const changeTime = (id: number, time: string) => {
@@ -236,6 +261,7 @@ export default function HomeTab({
           // 복용 방법(예: "2정")에서 1회 복용량을 읽어 사용
           dailyDose: parseDose(item.desc)?.amount ?? item.dailyDose ?? 1,
           stockUpdatedAt: refilled ? new Date().toISOString() : item.stockUpdatedAt,
+          stockInitial: refilled ? nextStock : item.stockInitial,
         };
       })
     );
@@ -243,20 +269,20 @@ export default function HomeTab({
   };
 
   const handleSurveyAction = (action: SurveyAction) => {
-    const target = supplements.find((item) => item.id === surveyTargetId);
-    setSurveyTargetId(null);
+    const entry = surveyEntry;
+    setSurveyEntry(null);
+    setFinished(null);
     if (action.kind === "search") onSearch(action.keyword);
     if (action.kind === "recommend") onRecommend(action.ingredients);
-    if (action.kind === "refill" && target) {
-      setSelectedTime(target.timeCategory);
+    if (action.kind === "readd" && entry) {
+      // 다시 복용 관리에 추가하고, 새 통의 잔여량을 바로 입력하게 함
+      const item = supplementFromHistory(entry);
+      setSupplements((prev) => [...prev, item]);
+      setSelectedTime(item.timeCategory);
       setHomeView("일정");
-      startEditStock(target);
+      startEditStock(item);
     }
-    if (action.kind === "remove" && target) removeSupplement(target.id);
   };
-
-  const surveysToDo = pendingSurveys(supplements);
-  const surveyTarget = supplements.find((item) => item.id === surveyTargetId);
 
   const loadStorageTips = async () => {
     if (supplements.length === 0) {
@@ -443,26 +469,37 @@ export default function HomeTab({
         </div>
       )}
 
-      {surveysToDo.map((item) => (
-        <button
-          type="button"
-          key={item.id}
-          className="survey-prompt"
-          onClick={() => setSurveyTargetId(item.id)}
-        >
+      {finished && (
+        <div className="finished-notice">
           <ClipboardCheck size={20} />
-          <span>
-            <strong>{josa(item.name, "을/를")} 다 드셨어요</strong>
-            효과는 어땠나요? 설문하고 맞춤 추천 받기
-          </span>
-        </button>
-      ))}
+          <div>
+            <strong>{josa(finished.entry.name, "을/를")} 다 드셨어요!</strong>
+            <p>복용 관리에서 빼고 마이페이지 → 복용 내역에 기록했어요.</p>
+            <div className="finished-actions">
+              <button type="button" className="primary" onClick={() => setSurveyEntry(finished.entry)}>
+                설문하고 재구매 판단 받기
+              </button>
+              <button type="button" onClick={undoFinished}>
+                되돌리기
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="finished-close"
+            aria-label="닫기"
+            onClick={() => setFinished(null)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
-      {surveyTarget && (
+      {surveyEntry && (
         <SurveyModal
-          supplement={surveyTarget}
+          subject={{ key: surveyEntry.id, id: surveyEntry.supplementId, name: surveyEntry.name }}
           supplements={supplements}
-          onClose={() => setSurveyTargetId(null)}
+          onClose={() => setSurveyEntry(null)}
           onAction={handleSurveyAction}
         />
       )}

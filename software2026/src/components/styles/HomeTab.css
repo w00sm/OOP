@@ -601,30 +601,68 @@ button.card-stock {
   color: white;
 }
 
-/* ---------- 다 먹은 영양제 설문 안내 ---------- */
-.survey-prompt {
-  width: 100%;
+/* ---------- 다 먹은 영양제 안내 (복용 내역으로 이동) ---------- */
+.finished-notice {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  gap: 10px;
+  align-items: flex-start;
   margin-bottom: 14px;
   padding: 14px 16px;
   border: 1px solid #c7e3a5;
   border-radius: 18px;
   background: linear-gradient(135deg, #f3fbe7 0%, #e9f7f1 100%);
   color: #3f6e12;
-  font-size: 13px;
-  text-align: left;
 }
 
-.survey-prompt svg {
+.finished-notice > svg {
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.survey-prompt strong {
+.finished-notice strong {
   display: block;
-  margin-bottom: 2px;
+  margin-right: 20px;
   font-size: 14px;
   font-weight: 800;
   color: #071426;
+}
+
+.finished-notice p {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.finished-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.finished-actions button {
+  padding: 8px 12px;
+  border: 1px solid #c7e3a5;
+  border-radius: 999px;
+  background: white;
+  color: #3f6e12;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.finished-actions button.primary {
+  border-color: #8bcf3f;
+  background: #8bcf3f;
+  color: white;
+}
+
+.finished-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: 0;
+  padding: 2px;
+  background: transparent;
+  color: #6f7b78;
+  display: flex;
 }

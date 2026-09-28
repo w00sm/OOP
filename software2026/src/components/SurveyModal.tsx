@@ -6,9 +6,11 @@ import {
   DISCOMFORT_OPTIONS,
   EFFECT_OPTIONS,
   NEXT_OPTIONS,
+  VERDICT_LABELS,
   recommendAfterSurvey,
   saveSurvey,
   type SurveyAction,
+  type SurveySubject,
   type SurveyAnswers,
   type SurveyResult,
 } from "../services/surveyService";
@@ -16,18 +18,25 @@ import { josa } from "../utils/josa";
 import "./SurveyModal.css";
 
 type SurveyModalProps = {
-  supplement: Supplement;
-  supplements: Supplement[]; // 다른 성분 추천 시 이미 충분히 먹는 성분을 빼기 위해
+  subject: SurveySubject; // 설문할 복용 내역
+  supplements: Supplement[]; // 지금 복용 관리 중인 영양제 (다른 성분 추천 시 이미 충분히 먹는 성분 제외)
+  savedResult?: SurveyResult; // 이미 설문했다면 결과부터 보여줌
   onClose: () => void;
   onAction: (action: SurveyAction) => void;
 };
 
-export default function SurveyModal({ supplement, supplements, onClose, onAction }: SurveyModalProps) {
+export default function SurveyModal({
+  subject,
+  supplements,
+  savedResult,
+  onClose,
+  onAction,
+}: SurveyModalProps) {
   const [effect, setEffect] = useState<SurveyAnswers["effect"] | null>(null);
   const [changes, setChanges] = useState<string[]>([]);
   const [discomfort, setDiscomfort] = useState<SurveyAnswers["discomfort"] | null>(null);
   const [next, setNext] = useState<SurveyAnswers["next"] | null>(null);
-  const [result, setResult] = useState<SurveyResult | null>(null);
+  const [result, setResult] = useState<SurveyResult | null>(savedResult ?? null);
 
   const canSubmit = effect !== null && discomfort !== null && next !== null;
 
@@ -39,8 +48,9 @@ export default function SurveyModal({ supplement, supplements, onClose, onAction
   const submit = () => {
     if (!canSubmit) return;
     const answers: SurveyAnswers = { effect, changes, discomfort, next };
-    saveSurvey(supplement, answers);
-    setResult(recommendAfterSurvey(supplement, answers, supplements));
+    const outcome = recommendAfterSurvey(subject, answers, supplements);
+    saveSurvey(subject, answers, outcome);
+    setResult(outcome);
   };
 
   return (
@@ -55,8 +65,8 @@ export default function SurveyModal({ supplement, supplements, onClose, onAction
             <div className="survey-head">
               <ClipboardCheck size={22} />
               <div>
-                <h2>{josa(supplement.name, "을/를")} 다 드셨어요!</h2>
-                <p>1분이면 끝나요. 답변에 맞춰 다음 영양제를 추천해 드려요.</p>
+                <h2>{josa(subject.name, "은/는")} 어떠셨나요?</h2>
+                <p>1분이면 끝나요. 답변으로 재구매가 필요한지 판단해 드려요.</p>
               </div>
             </div>
 
@@ -137,6 +147,9 @@ export default function SurveyModal({ supplement, supplements, onClose, onAction
           </>
         ) : (
           <div className="survey-result">
+            <span className={`survey-verdict ${result.verdict}`}>
+              {VERDICT_LABELS[result.verdict]}
+            </span>
             <h2>{result.title}</h2>
             <p>{result.message}</p>
             <div className="survey-actions">
@@ -150,6 +163,9 @@ export default function SurveyModal({ supplement, supplements, onClose, onAction
                   {action.label}
                 </button>
               ))}
+              <button type="button" className="survey-action later" onClick={() => setResult(null)}>
+                다시 설문하기
+              </button>
               <button type="button" className="survey-action later" onClick={onClose}>
                 닫기
               </button>
