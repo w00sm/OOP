@@ -36,6 +36,8 @@ import {
 } from "../../services/historyService";
 import { josa } from "../../utils/josa";
 import SurveyModal from "../SurveyModal";
+import NutritionCard from "../NutritionCard";
+import { isCardHiddenToday, isCardOff } from "../../services/cardNewsService";
 import { MovedNotice, type MedNotice } from "../MedicationsView";
 import {
   MED_KIND_LABELS,
@@ -115,6 +117,8 @@ export default function HomeTab({
   const [finished, setFinished] = useState<{ entry: HistoryEntry; restore: Supplement } | null>(null);
   const [surveyEntry, setSurveyEntry] = useState<HistoryEntry | null>(null);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  // 오늘의 영양 카드 (X를 누른 날이나 마이페이지에서 끄면 숨김)
+  const [showNutritionCard, setShowNutritionCard] = useState(() => !isCardOff() && !isCardHiddenToday());
 
   const [storageTips, setStorageTips] = useState<StorageTip[]>([]);
   const [isStorageLoading, setIsStorageLoading] = useState(false);
@@ -436,6 +440,14 @@ export default function HomeTab({
           </div>
         </div>
       </div>
+
+      {showNutritionCard && (
+        <NutritionCard
+          supplements={supplements}
+          medications={medications}
+          onHide={() => setShowNutritionCard(false)}
+        />
+      )}
 
       <button
         className="add-button"
