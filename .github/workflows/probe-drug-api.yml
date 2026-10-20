@@ -22,19 +22,24 @@ jobs:
       - name: 인증키 확인
         run: |
           if [ -z "$KEY" ]; then echo "::error::DATA_GO_KR_KEY 시크릿이 없습니다"; exit 1; fi
-          echo "인증키 길이: ${#KEY}"
+          echo "인증키 길이(원본): ${#KEY}"
+          CLEAN=$(printf '%s' "$KEY" | tr -d '[:space:]')
+          echo "인증키 길이(공백 제거): ${#CLEAN}"
 
       - name: API 호출
         run: |
+          KEY=$(printf '%s' "$KEY" | tr -d '[:space:]')
           probe() {
             local label="$1" url="$2"; shift 2
             echo "=================== $label"
             echo "URL: $url"
             body=$(curl -sS -G --max-time 30 "$url" --data-urlencode "serviceKey=$KEY" "$@" -w '\nHTTP_STATUS:%{http_code}') || true
             echo "$body" | tail -n1
-            echo "$body" | sed '$d' | python3 - <<'PY'
+            printf '%s\n' "$body" | sed '$d' > /tmp/body.txt
+            echo "응답 앞부분: $(head -c 300 /tmp/body.txt | tr '\n' ' ')"
+            python3 - /tmp/body.txt <<'PY'
           import sys, json
-          raw = sys.stdin.read()
+          raw = open(sys.argv[1], encoding="utf-8", errors="replace").read()
           try:
               d = json.loads(raw)
           except Exception:
@@ -59,9 +64,7 @@ jobs:
           probe "e약은요 목록" "https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList" \
             --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "itemName=타이레놀"
 
-          for svc in DrugPrdtPrmsnInfoService07 DrugPrdtPrmsnInfoService06 DrugPrdtPrmsnInfoService05; do
-            for op in getDrugPrdtPrmsnDtlInq06 getDrugPrdtPrmsnDtlInq05 getDrugPrdtPrmsnDtlInq04 getDrugPrdtPrmsnInq07 getDrugPrdtPrmsnInq06 getDrugPrdtPrmsnInq05; do
-              probe "허가정보 $svc/$op" "https://apis.data.go.kr/1471000/$svc/$op" \
-                --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "item_name=씬지로이드"
-            done
+          for op in getDrugPrdtPrmsnInq07 getDrugPrdtPrmsnDtlInq06; do
+            probe "허가정보 $op" "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService07/$op" \
+              --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "item_name=씬지로이드"
           done
