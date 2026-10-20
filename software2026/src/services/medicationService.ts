@@ -20,6 +20,7 @@ export type Medication = {
   until?: string; // 복용 마지막 날 (YYYY-MM-DD, 없으면 계속)
   hits: DrugHit[]; // 설명서에 언급된 영양제 성분
   checkedOn?: { date: string; slots: TimeCategory[] }; // 오늘 먹었다고 체크한 시간대 (날짜가 바뀌면 자동으로 미복용)
+  takenOn?: { date: string; times: string[] }; // 필요시 약: 오늘 먹은 시각 (예: ["14:20"])
 };
 
 export const MED_TIMINGS: MedTiming[] = ["공복", "식전", "식후", "필요시"];
@@ -78,6 +79,21 @@ export function toggleMedCheck(med: Medication, slot: TimeCategory, today = toda
   };
 }
 
+// 필요시 약: 오늘 먹은 시각 (없으면 빈 목록)
+export const takenTimes = (med: Medication, today = todayKey()) =>
+  med.takenOn?.date === today ? med.takenOn.times : [];
+
+// 필요시 약 체크: 안 먹었으면 지금 시각을 기록, 먹었으면 오늘 기록을 지움
+export function toggleMedTaken(med: Medication, now = new Date()): Medication {
+  const today = todayKey(now);
+  if (takenTimes(med, today).length > 0) return { ...med, takenOn: undefined };
+  return { ...med, takenOn: { date: today, times: [fromMinutes(now.getHours() * 60 + now.getMinutes())] } };
+}
+
+// 필요시 약 중 복용 기간이 남은 것
+export const asNeededMeds = (medications: Medication[], today = todayKey()) =>
+  medications.filter((med) => med.timing === "필요시" && isActiveMed(med, today));
+
 // 일정에 표시할 약 복용 (약 × 시간대)
 export type MedDose = { med: Medication; slot: TimeCategory; time: string };
 
@@ -96,22 +112,37 @@ export function medDoses(medications: Medication[], today = todayKey()): MedDose
 // 설명서에 적힌 간격 (너무 길거나 없으면 기본 2시간)
 export const gapOf = (hit: DrugHit) => (hit.g && hit.g >= 1 && hit.g <= 6 ? hit.g : DEFAULT_GAP_HOURS);
 
-export type MedConflict = { med: Medication; hit: DrugHit; gap: number; time: string };
+// taken: 필요시 약을 오늘 실제로 먹은 시각 기준인지 (정해진 복용 시간이 아니라)
+export type MedConflict = { med: Medication; hit: DrugHit; gap: number; time: string; taken: boolean };
 
 // 이 시간에 이 성분을 먹으면 간격이 부족한 약
+// includeTaken: 필요시 약을 오늘 먹은 시각도 따짐 (홈 카드 경고용. 시간 배정에는 쓰지 않음)
 export function medConflictsAt(
   ingredients: string[],
   time: string,
-  medications: Medication[]
+  medications: Medication[],
+  includeTaken = false
 ): MedConflict[] {
   const at = toMinutes(time);
-  return medDoses(medications).flatMap(({ med, time: doseTime }) =>
+  const doses = [
+    ...medDoses(medications).map(({ med, time: doseTime }) => ({ med, time: doseTime, taken: false })),
+    ...(includeTaken
+      ? asNeededMeds(medications).flatMap((med) =>
+          takenTimes(med).map((takenTime) => ({ med, time: takenTime, taken: true }))
+        )
+      : []),
+  ];
+  return doses.flatMap(({ med, time: doseTime, taken }) =>
     med.hits
       .filter((hit) => ingredients.includes(hit.i))
       .filter((hit) => Math.abs(toMinutes(doseTime) - at) < gapOf(hit) * 60)
-      .map((hit) => ({ med, hit, gap: gapOf(hit), time: doseTime }))
+      .map((hit) => ({ med, hit, gap: gapOf(hit), time: doseTime, taken }))
   );
 }
+
+// 필요시 약을 먹은 시각 + 간격 → 영양제를 먹어도 되는 시각 (자정을 넘기면 23:59)
+export const safeAfter = (time: string, gap: number) =>
+  fromMinutes(Math.min(toMinutes(time) + gap * 60, 23 * 60 + 59));
 
 // 성분 이름으로 겹치는 약 찾기 (추천탭: "비타민 D 1000IU"처럼 적힌 추천 성분과 겹치는 약 안내)
 export function medsMentioning(ingredient: string, medications: Medication[]) {

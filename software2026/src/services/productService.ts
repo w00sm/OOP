@@ -11,10 +11,23 @@ export type PricePoint = {
   price: number;
 };
 
+// 판매처별 가격 (가격비교)
+export type Offer = {
+  mall: string;
+  price: number;
+  shipping: number; // 배송비 (0이면 무료배송)
+  delivery: string; // "내일 도착" 같은 배송 안내
+  official: boolean; // 브랜드 공식몰인지
+};
+
 export type Product = Omit<ProductSeed, "basePrice"> & {
-  lprice: number; // 현재가 (네이버쇼핑 API 필드명과 동일)
+  lprice: number; // 현재 최저가 (네이버쇼핑 API 필드명과 동일)
   link: string;
   priceHistory: PricePoint[]; // 오래된 날짜 → 오늘 순서
+  rating: number; // 평점 (5점 만점)
+  reviewCount: number;
+  wishCount: number; // 다른 사람들이 찜한 수
+  offers: Offer[]; // 판매처별 가격 (싼 순서, 첫 번째가 최저가)
 };
 
 export type SortOption = "sim" | "asc" | "dsc" | "discount";
@@ -82,18 +95,56 @@ function buildPriceHistory(seed: ProductSeed): PricePoint[] {
   return history;
 }
 
+// 가격비교에 나오는 판매처 (시연용 가상 쇼핑몰)
+const MALLS = ["핏마켓", "헬스플러스", "웰니스몰", "데일리마트", "바이오샵", "건강창고"];
+const DELIVERIES = ["내일 도착", "오늘출발", "내일 도착", "2일 내 도착"];
+
+// 판매처별 가격: 가장 싼 곳이 현재 최저가(lprice), 나머지는 조금씩 비쌈
+function buildOffers(seed: ProductSeed, lowest: number): Offer[] {
+  const random = seededRandom(`${seed.productId}-offers`);
+  const malls = [...MALLS].sort(() => random() - 0.5).slice(0, 2 + Math.floor(random() * 3));
+  const offers = [seed.mallName, ...malls].map((mall, index) => {
+    const official = index === 0;
+    const markup = official ? 0.03 + random() * 0.06 : random() * 0.1;
+    const price = Math.round((lowest * (1 + markup)) / 100) * 100;
+    return {
+      mall,
+      price,
+      shipping: price >= 20000 || random() < 0.3 ? 0 : random() < 0.5 ? 2500 : 3000,
+      delivery: DELIVERIES[Math.floor(random() * DELIVERIES.length)],
+      official,
+    };
+  });
+  // 공식몰이 아닌 한 곳을 최저가로
+  const cheapest = 1 + Math.floor(random() * (offers.length - 1));
+  offers[cheapest] = { ...offers[cheapest], price: lowest };
+  return offers.sort((a, b) => a.price - b.price || a.shipping - b.shipping);
+}
+
 function toProduct(seed: ProductSeed): Product {
   const { basePrice, ...rest } = seed;
   const priceHistory = buildPriceHistory(seed);
+  const lprice = priceHistory[priceHistory.length - 1]?.price ?? basePrice;
+  const random = seededRandom(`${seed.productId}-reviews`);
   return {
     ...rest,
-    lprice: priceHistory[priceHistory.length - 1]?.price ?? basePrice,
+    lprice,
     link: `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(
       seed.title
     )}`,
     priceHistory,
+    rating: Math.round((4.5 + random() * 0.45) * 10) / 10,
+    reviewCount: Math.round(200 + random() ** 2 * 18000),
+    wishCount: Math.round(50 + random() ** 2 * 4000),
+    offers: buildOffers(seed, lprice),
   };
 }
+
+// 하루 가격: 한 통 가격 ÷ (한 통 개수 ÷ 하루 섭취량)
+export const pricePerDay = (product: Product) =>
+  Math.round(product.lprice / Math.max(1, product.count / Math.max(1, product.dailyDose)) / 10) * 10;
+
+export const formatCount = (count: number) => count.toLocaleString("ko-KR");
 
 const PRODUCTS: Product[] = PRODUCT_SEEDS.map(toProduct);
 

@@ -132,8 +132,12 @@ export function suggestSchedule(
 }
 
 // 이 영양제와 간격이 부족한 약 (홈 카드 경고)
-export const medConflictsFor = (supplement: Supplement, medications: Medication[]) =>
-  medConflictsAt(detectIngredients(supplement.name), supplement.time, medications);
+// includeTaken: 필요시 약을 오늘 먹은 시각도 따짐
+export const medConflictsFor = (
+  supplement: Supplement,
+  medications: Medication[],
+  includeTaken = false
+) => medConflictsAt(detectIngredients(supplement.name), supplement.time, medications, includeTaken);
 
 export type MovedSupplement = {
   id: number;

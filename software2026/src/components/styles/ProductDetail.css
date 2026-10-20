@@ -1,0 +1,340 @@
+/* ---------- 검색 결과 카드: 쇼핑몰 정보 ---------- */
+.product-thumb svg,
+.product-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.product-lowest-tag {
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid #c8d1cc;
+  color: #6f7b78;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6f7b78;
+}
+
+.product-rating svg {
+  color: #f5b301;
+}
+
+.product-rating b {
+  color: #071426;
+}
+
+.product-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.product-badges span {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f2f5f3;
+  color: #4b5563;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.product-badges span.lowest {
+  background: #10b956;
+  color: white;
+}
+
+/* ---------- 상품 상세 시트 ---------- */
+.product-sheet {
+  max-height: 92vh;
+  padding-bottom: 0;
+}
+
+.product-sheet-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(7, 20, 38, 0.1);
+}
+
+.product-sheet-image {
+  display: flex;
+  justify-content: center;
+  margin: 0 -20px 16px;
+  margin-top: -24px;
+  padding: 8px 0;
+  border-radius: 24px 24px 0 0;
+  background: white;
+  border-bottom: 1px solid #eef1ef;
+}
+
+.product-sheet-brand {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6f7b78;
+}
+
+.product-sheet-title {
+  margin: 4px 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #071426;
+}
+
+.product-sheet-price {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 22px;
+}
+
+.product-sheet-price strong {
+  font-weight: 900;
+}
+
+.product-sheet-unit {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6f7b78;
+}
+
+.product-sheet-unit b {
+  color: #3f6e12;
+}
+
+.product-sheet-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e8ecea;
+}
+
+.product-sheet-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.product-sheet-section h3 small {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9aa3a0;
+}
+
+.offer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.offer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #e1e7e3;
+  background: white;
+  color: #071426;
+  text-decoration: none;
+}
+
+.offer-row.best {
+  border-color: #8bcf3f;
+  background: #f8fff0;
+}
+
+.offer-mall b {
+  font-size: 14px;
+}
+
+.offer-mall small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: #6f7b78;
+}
+
+.offer-tag {
+  margin-left: 5px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  vertical-align: 1px;
+}
+
+.offer-tag.official {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.offer-tag.best {
+  background: #8bcf3f;
+  color: white;
+}
+
+.offer-price {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.offer-price svg {
+  color: #9aa3a0;
+}
+
+.product-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.product-chip-row span {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f2f8ea;
+  color: #3f6e12;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.product-chip-row span.tag {
+  background: #f2f5f3;
+  color: #4b5563;
+}
+
+.product-sheet-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  margin: 20px -20px 0;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: #f7faf7;
+  border-top: 1px solid #e8ecea;
+}
+
+.product-sheet-wish {
+  flex-shrink: 0;
+  width: 52px;
+  border: 1px solid #e1e7e3;
+  border-radius: 14px;
+  background: white;
+  color: #9aa3a0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-sheet-wish.on {
+  color: #ef4444;
+}
+
+.product-sheet-buy {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 15px 10px;
+  border-radius: 14px;
+  background: #8bcf3f;
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+/* ---------- 가격 추이 그래프 ---------- */
+.price-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+  overflow: visible;
+}
+
+.price-chart-axis {
+  stroke: #e1e7e3;
+  stroke-width: 1;
+}
+
+.price-chart-tick {
+  font-size: 9px;
+  fill: #9aa3a0;
+}
+
+.price-chart-line {
+  fill: none;
+  stroke: #5f9e22;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.price-chart-dot {
+  fill: #5f9e22;
+  stroke: #f7faf7;
+  stroke-width: 2;
+}
+
+.price-chart-focus {
+  fill: #5f9e22;
+  stroke: #f7faf7;
+  stroke-width: 2;
+}
+
+.price-chart-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  fill: #071426;
+}
+
+.price-chart-label.muted {
+  fill: #6f7b78;
+  font-weight: 600;
+}
+
+.price-chart-cross {
+  stroke: #9aa3a0;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.price-chart-tip {
+  fill: #071426;
+}
+
+.price-chart-tip-text {
+  font-size: 8.5px;
+  font-weight: 700;
+  fill: white;
+}

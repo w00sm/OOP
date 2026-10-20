@@ -565,3 +565,13 @@
 .card.med-dose .med-badge {
   border-radius: 6px;
 }
+
+.card.med-dose .time.taken {
+  font-size: 12px;
+  background: #e0e7ff;
+}
+
+.card-warning.soft {
+  background: #f1f3fe;
+  color: #4338ca;
+}

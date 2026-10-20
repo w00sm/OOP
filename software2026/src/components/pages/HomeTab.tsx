@@ -18,6 +18,7 @@ import { getOpenAI } from "../../services/openaiClient";
 import type { Supplement, TimeCategory } from "../Home";
 import {
   daysLeft,
+  detectIngredients,
   findScheduleConflicts,
   medConflictsFor,
   parseDose,
@@ -38,10 +39,15 @@ import SurveyModal from "../SurveyModal";
 import { MovedNotice, type MedNotice } from "../MedicationsView";
 import {
   MED_KIND_LABELS,
+  asNeededMeds,
+  hitSummary,
   isMedChecked,
   medDoses,
+  safeAfter,
   shortMedName,
+  takenTimes,
   toggleMedCheck,
+  toggleMedTaken,
   type Medication,
 } from "../../services/medicationService";
 import "../Medications.css";
@@ -368,8 +374,16 @@ export default function HomeTab({
   // 이 시간대에 먹는 약 (마이페이지 → 복용 중인 약)
   const slotMedDoses = medDoses(medications).filter((dose) => dose.slot === selectedTime);
 
+  // 필요시 약은 정해진 시간이 없어 모든 시간대에 함께 보여줍니다.
+  const asNeeded = asNeededMeds(medications);
+
   const toggleMedication = (id: number, slot: TimeCategory) => {
     setMedications((prev) => prev.map((med) => (med.id === id ? toggleMedCheck(med, slot) : med)));
+  };
+
+  // 필요시 약: 체크하면 지금 시각을 기록 (간격이 필요한 영양제를 안내)
+  const toggleAsNeeded = (id: number) => {
+    setMedications((prev) => prev.map((med) => (med.id === id ? toggleMedTaken(med) : med)));
   };
 
   const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
@@ -568,7 +582,7 @@ export default function HomeTab({
             ))}
           </div>
 
-          {slotMedDoses.length > 0 && (
+          {(slotMedDoses.length > 0 || asNeeded.length > 0) && (
             <>
               <div className="schedule-section-title">복용 중인 약</div>
               {slotMedDoses.map(({ med, slot, time }) => {
@@ -596,6 +610,70 @@ export default function HomeTab({
                   </div>
                 );
               })}
+              {asNeeded.map((med) => {
+                const taken = takenTimes(med);
+                const takenAt = taken[taken.length - 1];
+                const name = shortMedName(med.name);
+                // 먹은 뒤: 간격이 부족한 (아직 안 먹은) 영양제와 먹어도 되는 시각
+                const waits = takenAt
+                  ? supplements
+                      .filter((item) => !item.checked)
+                      .flatMap((item) =>
+                        medConflictsFor(item, [med], true)
+                          .filter((conflict) => conflict.taken)
+                          .slice(0, 1)
+                          .map((conflict) => ({ item, conflict }))
+                      )
+                  : [];
+                // 먹기 전: 설명서 주의 성분이 든 영양제
+                const related = med.hits.length
+                  ? supplements.filter((item) =>
+                      detectIngredients(item.name).some((ingredient) =>
+                        med.hits.some((hit) => hit.i === ingredient)
+                      )
+                    )
+                  : [];
+                return (
+                  <div className="card med-dose" key={med.id}>
+                    <div className="card-top">
+                      <button
+                        type="button"
+                        className={`circle ${takenAt ? "checked" : ""}`}
+                        aria-label={takenAt ? "복용 기록 지우기" : "지금 먹었어요"}
+                        onClick={() => toggleAsNeeded(med.id)}
+                      />
+                      <div>
+                        <div className={`name ${takenAt ? "done" : ""}`}>
+                          {name}
+                          <span className={`med-badge ${med.kind}`}>{MED_KIND_LABELS[med.kind]}</span>
+                        </div>
+                        <div className="desc">
+                          {med.dose} · 필요시
+                        </div>
+                      </div>
+                      {takenAt && <span className="time taken">{takenAt} 복용</span>}
+                    </div>
+                    {waits.map(({ item, conflict }) => (
+                      <div className="card-warning" key={item.id}>
+                        <TriangleAlert size={14} />
+                        <span>
+                          {josa(item.name, "은/는")} <b>{safeAfter(conflict.time, conflict.gap)} 이후</b>에
+                          드세요. 설명서에 {conflict.hit.i} 주의가 있어요.
+                        </span>
+                      </div>
+                    ))}
+                    {!takenAt && related.length > 0 && (
+                      <div className="card-warning soft">
+                        <Pill size={14} />
+                        <span>
+                          드실 때 {josa(related.map((item) => item.name).join(", "), "과/와")}{" "}
+                          {hitSummary(med.hits).gap}시간 간격을 두세요.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <div className="schedule-section-title">영양제</div>
             </>
           )}
@@ -607,7 +685,7 @@ export default function HomeTab({
           ) : (
             filteredSupplements.map((item) => {
               const conflict = conflicts.get(item.id);
-              const medConflict = medConflictsFor(item, medications)[0];
+              const medConflict = medConflictsFor(item, medications, true)[0];
               const movedByMed = medNotice?.moved.find(
                 (moved) => moved.id === item.id && moved.to === item.time
               );
@@ -718,7 +796,15 @@ export default function HomeTab({
                     </button>
                   )}
 
-                  {medConflict ? (
+                  {medConflict?.taken ? (
+                    <div className="card-warning">
+                      <Pill size={14} />
+                      <span>
+                        {josa(shortMedName(medConflict.med.name), "을/를")} {medConflict.time}에 드셨어요.{" "}
+                        <b>{safeAfter(medConflict.time, medConflict.gap)} 이후</b>에 드세요.
+                      </span>
+                    </div>
+                  ) : medConflict ? (
                     <div className="card-warning">
                       <Pill size={14} />
                       <span>

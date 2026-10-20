@@ -1,10 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import NotificationBell from "../NotificationBell";
-import { Heart, Search, Sparkles, X } from "lucide-react";
+import { Heart, Search, Sparkles, Star, X } from "lucide-react";
+import ProductImage from "../ProductImage";
+import ProductDetailSheet from "../ProductDetailSheet";
 import type { Wishlist } from "../../hooks/useWishlist";
 import {
   SORT_LABELS,
+  formatCount,
   formatPrice,
+  pricePerDay,
   getPriceStats,
   matchedIngredients,
   recommendProducts,
@@ -14,6 +18,7 @@ import {
 } from "../../services/productService";
 import { josa } from "../../utils/josa";
 import "../styles/SearchTab.css";
+import "../styles/ProductDetail.css";
 
 type SearchTabProps = {
   keyword: string; // 실제로 검색한 검색어
@@ -41,6 +46,7 @@ export default function SearchTab({
   const [results, setResults] = useState<Product[]>([]);
   const [suggestion, setSuggestion] = useState<string | null>(null); // 오타 교정 단어
   const [selectedIngredient, setSelectedIngredient] = useState("");
+  const [openProduct, setOpenProduct] = useState<Product | null>(null); // 상세를 연 상품
   // 입력창에 적는 중인 글자. 돋보기나 Enter를 눌러야 검색어(keyword)로 반영됩니다.
   const [inputValue, setInputValue] = useState(keyword);
 
@@ -223,13 +229,18 @@ export default function SearchTab({
                 : [];
 
               return (
-                <div className="product-item" key={product.productId}>
+                <div
+                  className="product-item"
+                  key={product.productId}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setOpenProduct(product)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") setOpenProduct(product);
+                  }}
+                >
                   <div className="product-thumb">
-                    {product.image ? (
-                      <img src={product.image} alt={product.title} />
-                    ) : (
-                      <span>{product.category.slice(0, 2)}</span>
-                    )}
+                    <ProductImage product={product} size={96} />
                   </div>
 
                   <div className="product-info">
@@ -240,12 +251,21 @@ export default function SearchTab({
                         <span className="discount-rate">{stats.discountRate}%</span>
                       )}
                       {formatPrice(stats.current)}
-                      {stats.isLowest && (
-                        <span className="lowest-badge">90일 최저가</span>
-                      )}
+                      <span className="product-lowest-tag">최저</span>
+                    </div>
+                    <div className="product-rating">
+                      <Star size={12} fill="currentColor" />
+                      <b>{product.rating.toFixed(1)}</b>
+                      <span>({formatCount(product.reviewCount)})</span>
+                      <span>· 찜 {formatCount(product.wishCount)}</span>
+                    </div>
+                    <div className="product-badges">
+                      {product.offers[0].shipping === 0 && <span>무료배송</span>}
+                      <span>{product.offers[0].delivery}</span>
+                      {stats.isLowest && <span className="lowest">90일 최저가</span>}
                     </div>
                     <div className="product-meta">
-                      90일 최저 {formatPrice(stats.lowest)} · {product.mallName}
+                      판매처 {product.offers.length}곳 · 하루 {formatPrice(pricePerDay(product))}
                     </div>
                     {matched.length > 0 && (
                       <div className="product-matched">
@@ -260,7 +280,10 @@ export default function SearchTab({
                     type="button"
                     aria-label={wished ? "찜 해제" : "찜하기"}
                     className={`wish-heart ${wished ? "on" : ""}`}
-                    onClick={() => wishlist.toggleWish(product.productId)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // 상세가 열리지 않게
+                      wishlist.toggleWish(product.productId);
+                    }}
                   >
                     <Heart
                       size={22}
@@ -273,6 +296,15 @@ export default function SearchTab({
             })}
         </div>
       </div>
+
+      {openProduct && (
+        <ProductDetailSheet
+          product={openProduct}
+          wished={wishlist.isWished(openProduct.productId)}
+          onToggleWish={() => wishlist.toggleWish(openProduct.productId)}
+          onClose={() => setOpenProduct(null)}
+        />
+      )}
     </>
   );
 }
