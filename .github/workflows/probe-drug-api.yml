@@ -1,0 +1,67 @@
+# 의약품 공공데이터 API 응답 확인 (임시)
+# e약은요·의약품 제품 허가정보 API가 이 저장소의 인증키로 호출되는지, 어떤 항목을 주는지 확인합니다.
+# 인증키(DATA_GO_KR_KEY)는 로그에 출력하지 않습니다.
+
+name: 의약품 API 응답 확인
+
+on:
+  push:
+    branches:
+      - claude/powershell-install-script-question-6vy5cy
+    paths:
+      - ".github/workflows/probe-drug-api.yml"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      KEY: ${{ secrets.DATA_GO_KR_KEY }}
+    steps:
+      - name: 인증키 확인
+        run: |
+          if [ -z "$KEY" ]; then echo "::error::DATA_GO_KR_KEY 시크릿이 없습니다"; exit 1; fi
+          echo "인증키 길이: ${#KEY}"
+
+      - name: API 호출
+        run: |
+          probe() {
+            local label="$1" url="$2"; shift 2
+            echo "=================== $label"
+            echo "URL: $url"
+            body=$(curl -sS -G --max-time 30 "$url" --data-urlencode "serviceKey=$KEY" "$@" -w '\nHTTP_STATUS:%{http_code}') || true
+            echo "$body" | tail -n1
+            echo "$body" | sed '$d' | python3 - <<'PY'
+          import sys, json
+          raw = sys.stdin.read()
+          try:
+              d = json.loads(raw)
+          except Exception:
+              print("JSON 아님:", raw[:400]); sys.exit()
+          header = d.get("header") or d.get("response", {}).get("header")
+          body = d.get("body") or d.get("response", {}).get("body", {})
+          print("header:", header)
+          print("totalCount:", body.get("totalCount"))
+          items = body.get("items") or []
+          if isinstance(items, dict): items = items.get("item", [])
+          if isinstance(items, dict): items = [items]
+          if not items: print("items 없음:", raw[:300]); sys.exit()
+          item = items[0]
+          if isinstance(item, dict) and "item" in item and len(item) == 1: item = item["item"]
+          print("필드:", list(item.keys()))
+          for k, v in item.items():
+              s = str(v).replace("\n", " ")
+              print(f"  {k}: {s[:160]}{'…' if len(s) > 160 else ''}")
+          PY
+          }
+
+          probe "e약은요 목록" "https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList" \
+            --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "itemName=타이레놀"
+
+          for svc in DrugPrdtPrmsnInfoService07 DrugPrdtPrmsnInfoService06 DrugPrdtPrmsnInfoService05; do
+            for op in getDrugPrdtPrmsnDtlInq06 getDrugPrdtPrmsnDtlInq05 getDrugPrdtPrmsnDtlInq04 getDrugPrdtPrmsnInq07 getDrugPrdtPrmsnInq06 getDrugPrdtPrmsnInq05; do
+              probe "허가정보 $svc/$op" "https://apis.data.go.kr/1471000/$svc/$op" \
+                --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "item_name=씬지로이드"
+            done
+          done
