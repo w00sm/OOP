@@ -13,7 +13,6 @@ import GoogleLoginButton from "../GoogleLoginButton";
 import IntakeHistory from "../IntakeHistory";
 import MedicationsView, { type MedNotice } from "../MedicationsView";
 import type { Medication } from "../../services/medicationService";
-import { isCardOff, setCardOff } from "../../services/cardNewsService";
 import type { Supplement } from "../Home";
 import type { HistoryEntry } from "../../services/historyService";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -106,7 +105,6 @@ export default function MyPageTab({
   const { settings, permission } = useNotifications();
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
   const [pushBusy, setPushBusy] = useState(false);
-  const [nutritionCardOn, setNutritionCardOn] = useState(() => !isCardOff());
 
   useEffect(() => {
     let cancelled = false;
@@ -510,24 +508,6 @@ export default function MyPageTab({
               </button>
             </div>
           ))}
-
-          <div className="alarm-card">
-            <div>
-              <h2>오늘의 영양 카드</h2>
-              <p>홈 화면에 영양제 카드뉴스를 보여줍니다 (X를 누르면 그날만 숨겨요)</p>
-            </div>
-            <button
-              type="button"
-              aria-label={`오늘의 영양 카드 ${nutritionCardOn ? "끄기" : "켜기"}`}
-              className={`switch ${nutritionCardOn ? "on" : ""}`}
-              onClick={() => {
-                setCardOff(nutritionCardOn);
-                setNutritionCardOn(!nutritionCardOn);
-              }}
-            >
-              <span></span>
-            </button>
-          </div>
 
           <button
             type="button"
