@@ -49,6 +49,13 @@ jobs:
       - name: 패키지 설치
         run: npm ci --no-audit --no-fund
 
+      # 식약처 e약은요 데이터를 받아 public/data/drugs.json으로 저장 (실패해도 배포는 계속, 앱은 직접 입력만 가능)
+      - name: 의약품 데이터 받기
+        continue-on-error: true
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: npm run drugs:fetch
+
       - name: 빌드
         run: npm run build
 

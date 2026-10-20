@@ -5,6 +5,7 @@ import {
   Moon,
   Package,
   Pencil,
+  Pill,
   Sun,
   Sunrise,
   Trash2,
@@ -18,6 +19,7 @@ import type { Supplement, TimeCategory } from "../Home";
 import {
   daysLeft,
   findScheduleConflicts,
+  medConflictsFor,
   parseDose,
   suggestSchedule,
   timeToCategory,
@@ -33,11 +35,25 @@ import {
 } from "../../services/historyService";
 import { josa } from "../../utils/josa";
 import SurveyModal from "../SurveyModal";
+import { MovedNotice, type MedNotice } from "../MedicationsView";
+import {
+  MED_KIND_LABELS,
+  isMedChecked,
+  medDoses,
+  shortMedName,
+  toggleMedCheck,
+  type Medication,
+} from "../../services/medicationService";
+import "../Medications.css";
 import "../styles/HomeTab.css";
 
 type HomeTabProps = {
   supplements: Supplement[];
   setSupplements: Dispatch<SetStateAction<Supplement[]>>;
+  medications: Medication[];
+  setMedications: Dispatch<SetStateAction<Medication[]>>;
+  medNotice: MedNotice | null; // 약 등록으로 영양제 시간을 옮겼을 때 안내
+  onCloseMedNotice: () => void;
   onOpenNotification: () => void;
   onSearch: (keyword: string) => void; // 설문 결과: 같은 성분 제품 보기
   onRecommend: (ingredients: string[]) => void; // 설문 결과: 다른 성분 추천 보기
@@ -65,6 +81,10 @@ type StorageTip = {
 export default function HomeTab({
   supplements,
   setSupplements,
+  medications,
+  setMedications,
+  medNotice,
+  onCloseMedNotice,
   onOpenNotification,
   onSearch,
   onRecommend,
@@ -157,7 +177,8 @@ export default function HomeTab({
     if (errors.name || errors.dose || !dose) return;
 
     // 이미 등록된 영양제와의 상호작용을 따져 복용 시간을 자동으로 정합니다.
-    const schedule = suggestSchedule(newName, supplements);
+    // 복용 중인 약 설명서에 이 성분 주의가 있으면 약과 간격을 두고 배정합니다.
+    const schedule = suggestSchedule(newName, supplements, medications);
     const stock = Number(newStock);
 
     const newItem: Supplement = {
@@ -344,6 +365,13 @@ export default function HomeTab({
 
   const conflicts = findScheduleConflicts(supplements);
 
+  // 이 시간대에 먹는 약 (마이페이지 → 복용 중인 약)
+  const slotMedDoses = medDoses(medications).filter((dose) => dose.slot === selectedTime);
+
+  const toggleMedication = (id: number, slot: TimeCategory) => {
+    setMedications((prev) => prev.map((med) => (med.id === id ? toggleMedCheck(med, slot) : med)));
+  };
+
   const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
 
   const selectedDateKey =
@@ -472,6 +500,8 @@ export default function HomeTab({
         </div>
       )}
 
+      {medNotice && <MovedNotice notice={medNotice} onClose={onCloseMedNotice} />}
+
       {finished && (
         <div className="finished-notice">
           <ClipboardCheck size={20} />
@@ -538,6 +568,38 @@ export default function HomeTab({
             ))}
           </div>
 
+          {slotMedDoses.length > 0 && (
+            <>
+              <div className="schedule-section-title">복용 중인 약</div>
+              {slotMedDoses.map(({ med, slot, time }) => {
+                const checked = isMedChecked(med, slot);
+                return (
+                  <div className="card med-dose" key={`${med.id}-${slot}`}>
+                    <div className="card-top">
+                      <button
+                        type="button"
+                        className={`circle ${checked ? "checked" : ""}`}
+                        aria-label={checked ? "복용 취소" : "복용 완료"}
+                        onClick={() => toggleMedication(med.id, slot)}
+                      />
+                      <div>
+                        <div className={`name ${checked ? "done" : ""}`}>
+                          {shortMedName(med.name)}
+                          <span className={`med-badge ${med.kind}`}>{MED_KIND_LABELS[med.kind]}</span>
+                        </div>
+                        <div className="desc">
+                          {med.dose} · {slot} {med.timing}
+                        </div>
+                      </div>
+                      <span className="time">{time}</span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="schedule-section-title">영양제</div>
+            </>
+          )}
+
           {filteredSupplements.length === 0 ? (
             <div className="empty-card">
               이 시간대에 등록된 영양제가 없습니다.
@@ -545,6 +607,10 @@ export default function HomeTab({
           ) : (
             filteredSupplements.map((item) => {
               const conflict = conflicts.get(item.id);
+              const medConflict = medConflictsFor(item, medications)[0];
+              const movedByMed = medNotice?.moved.find(
+                (moved) => moved.id === item.id && moved.to === item.time
+              );
               const left = daysLeft(item);
 
               return (
@@ -652,11 +718,29 @@ export default function HomeTab({
                     </button>
                   )}
 
+                  {medConflict ? (
+                    <div className="card-warning">
+                      <Pill size={14} />
+                      <span>
+                        {josa(shortMedName(medConflict.med.name), "과/와")} {medConflict.gap}시간 이상
+                        간격을 두세요. 설명서에 {medConflict.hit.i} 주의가 있어요.
+                      </span>
+                    </div>
+                  ) : movedByMed ? (
+                    <div className="card-warning">
+                      <Pill size={14} />
+                      <span>
+                        {josa(movedByMed.medName, "과/와")} {movedByMed.gap}시간 이상 간격을 두도록{" "}
+                        {movedByMed.from} → <b>{josa(movedByMed.to, "으로/로")}</b> 조정했어요.
+                      </span>
+                    </div>
+                  ) : null}
+
                   {conflict && (
                     <div className="card-warning">
                       <TriangleAlert size={14} />
                       <span>
-                        {josa(conflict.with.name, "과/와")} 같은 시간대예요.{" "}
+                        {josa(conflict.with.name, "과/와")} 복용 시간이 가까워요.{" "}
                         {conflict.rule.reason} 2시간 이상 간격을 두세요.
                       </span>
                     </div>

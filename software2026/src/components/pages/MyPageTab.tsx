@@ -6,10 +6,13 @@ import {
   ChevronRight,
   History,
   Megaphone,
+  Pill,
   UserRound,
 } from "lucide-react";
 import GoogleLoginButton from "../GoogleLoginButton";
 import IntakeHistory from "../IntakeHistory";
+import MedicationsView, { type MedNotice } from "../MedicationsView";
+import type { Medication } from "../../services/medicationService";
 import type { Supplement } from "../Home";
 import type { HistoryEntry } from "../../services/historyService";
 import { useNotifications } from "../../hooks/useNotifications";
@@ -36,7 +39,7 @@ const PUSH_STATUS_TEXT: Record<PushStatus, string> = {
 };
 import "../styles/MyPageTab.css";
 
-type MyPageView = "main" | "history" | "info" | "alarm" | "notice";
+type MyPageView = "main" | "meds" | "history" | "info" | "alarm" | "notice";
 
 type Notice = {
   id: number;
@@ -57,6 +60,11 @@ type MyPageTabProps = {
   onSearch: (keyword: string) => void;
   onRecommend: (ingredients: string[]) => void;
   onReAdd: (entry: HistoryEntry) => void; // 복용 내역의 영양제를 다시 복용 관리에 추가
+  medications: Medication[];
+  medNotice: MedNotice | null;
+  onAddMedication: (medication: Medication) => void;
+  onRemoveMedication: (id: number) => void;
+  onCloseMedNotice: () => void;
 };
 
 export default function MyPageTab({
@@ -65,6 +73,11 @@ export default function MyPageTab({
   onSearch,
   onRecommend,
   onReAdd,
+  medications,
+  medNotice,
+  onAddMedication,
+  onRemoveMedication,
+  onCloseMedNotice,
 }: MyPageTabProps) {
   const currentYear = new Date().getFullYear();
 
@@ -282,6 +295,21 @@ export default function MyPageTab({
             <button
               type="button"
               className="mypage-menu-item"
+              onClick={() => setMyPageView("meds")}
+            >
+              <span className="mypage-menu-left">
+                <span className="mypage-menu-icon"><Pill size={18} /></span>
+                복용 중인 약
+                {medications.length > 0 && (
+                  <span className="mypage-menu-count">{medications.length}</span>
+                )}
+              </span>
+              <span className="mypage-menu-arrow"><ChevronRight size={20} /></span>
+            </button>
+
+            <button
+              type="button"
+              className="mypage-menu-item"
               onClick={() => setMyPageView("history")}
             >
               <span className="mypage-menu-left">
@@ -489,6 +517,18 @@ export default function MyPageTab({
             테스트 알림 보내기
           </button>
         </>
+      )}
+
+      {myPageView === "meds" && (
+        <MedicationsView
+          supplements={supplements}
+          medications={medications}
+          notice={medNotice}
+          onBack={goMain}
+          onAdd={onAddMedication}
+          onRemove={onRemoveMedication}
+          onCloseNotice={onCloseMedNotice}
+        />
       )}
 
       {myPageView === "history" && (

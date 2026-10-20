@@ -288,3 +288,8 @@
   background: #fef2f2;
   color: #b91c1c;
 }
+
+.recommend-result-item p.intake-advice.med {
+  background: #f8f9ff;
+  color: #4338ca;
+}

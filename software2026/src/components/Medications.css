@@ -1,0 +1,567 @@
+/* ---------- 마이페이지 → 복용 중인 약 ---------- */
+.med-guide {
+  margin: -6px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6f7b78;
+  text-align: center;
+}
+
+.med-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  margin-bottom: 10px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid #e1e7e3;
+  color: #9aa3a0;
+  text-align: center;
+}
+
+.med-empty p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6f7b78;
+}
+
+.med-card {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid #e1e7e3;
+}
+
+.med-card.ended {
+  opacity: 0.6;
+}
+
+.med-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.med-icon.otc {
+  background: #f2f8ea;
+  color: #5f8f2a;
+}
+
+.med-icon.custom {
+  background: #f2f5f3;
+  color: #6f7b78;
+}
+
+.med-body {
+  flex: 1;
+  min-width: 0;
+  padding-right: 18px;
+}
+
+.med-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #071426;
+  word-break: break-all;
+}
+
+.med-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  vertical-align: 2px;
+  white-space: nowrap;
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.med-badge.otc {
+  background: #f2f8ea;
+  color: #5f8f2a;
+}
+
+.med-badge.custom {
+  background: #f2f5f3;
+  color: #6f7b78;
+}
+
+.med-meta {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #6f7b78;
+}
+
+.med-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.med-chips span {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #f2f5f3;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4b5563;
+}
+
+.med-warn {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff8e6;
+  color: #92400e;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.med-warn svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.med-warn em {
+  font-style: normal;
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.med-reasons {
+  margin: 6px 0 0;
+  padding: 8px 10px 8px 24px;
+  border-radius: 10px;
+  background: #fffdf5;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #6b4f1d;
+}
+
+.med-reasons b {
+  color: #071426;
+}
+
+.med-remove {
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  display: flex;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #c8d1cc;
+}
+
+.med-remove:hover {
+  color: #ef4444;
+}
+
+.med-add {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1.5px dashed #8bcf3f;
+  background: #f8fff0;
+  color: #5f8f2a;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.med-source {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #9aa3a0;
+}
+
+.med-source.center {
+  text-align: center;
+}
+
+.med-confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.custom-modal-card .med-confirm-buttons button.secondary {
+  background: #eef2ef;
+  color: #4b5563;
+}
+
+.med-moved {
+  background: linear-gradient(135deg, #f3fbe7, #e9f7f1);
+  border-color: #c7e3a5;
+}
+
+.med-moved b {
+  color: #071426;
+}
+
+/* ---------- 추가 시트 ---------- */
+.med-sheet {
+  max-height: 90vh;
+}
+
+.med-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.med-sheet-head strong {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.med-sheet-x {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #eef2ef;
+  color: #6f7b78;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.med-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1.5px solid #8bcf3f;
+  background: white;
+  color: #6f7b78;
+}
+
+.med-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: #071426;
+}
+
+.med-search button {
+  display: flex;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: #9aa3a0;
+}
+
+.med-kind-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.med-kind-tabs button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #e1e7e3;
+  background: white;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6f7b78;
+}
+
+.med-kind-tabs button.active {
+  background: #071426;
+  border-color: #071426;
+  color: white;
+}
+
+.med-results {
+  max-height: 34vh;
+  overflow-y: auto;
+}
+
+.med-result {
+  display: block;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #e1e7e3;
+  background: white;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: #071426;
+}
+
+.med-result.selected {
+  border: 1.5px solid #8bcf3f;
+  background: #f3fbe7;
+}
+
+.med-result-name {
+  font-weight: 800;
+  word-break: break-all;
+}
+
+.med-result small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #6f7b78;
+}
+
+.med-result.custom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6f7b78;
+}
+
+.med-result.custom b {
+  color: #5f8f2a;
+}
+
+.med-results-empty {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6f7b78;
+}
+
+.med-custom input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #8bcf3f;
+  background: white;
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+
+.med-custom p {
+  margin: 6px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6f7b78;
+}
+
+.med-custom button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #5f8f2a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.med-label {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.med-label small {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #9aa3a0;
+}
+
+.med-seg {
+  display: grid;
+  gap: 6px;
+}
+
+.med-seg.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.med-seg.four {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.med-seg button {
+  padding: 10px 0;
+  border-radius: 12px;
+  border: 1px solid #e1e7e3;
+  background: white;
+  font-size: 13px;
+  font-weight: 700;
+  color: #071426;
+}
+
+.med-seg button:disabled {
+  color: #c8d1cc;
+}
+
+.med-seg button.active {
+  background: #071426;
+  border-color: #071426;
+  color: white;
+}
+
+.med-seg button.active.green {
+  background: #8bcf3f;
+  border-color: #8bcf3f;
+}
+
+.med-inline-fields {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.med-inline-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.med-inline-fields small {
+  font-weight: 500;
+  color: #9aa3a0;
+}
+
+.med-inline-fields input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e1e7e3;
+  background: white;
+  font: inherit;
+  font-size: 14px;
+  color: #071426;
+}
+
+.med-found {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff8e6;
+  border: 1px solid #fde7a8;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #92400e;
+}
+
+.med-found strong {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #071426;
+}
+
+.med-found ul {
+  margin: 6px 0;
+  padding-left: 16px;
+}
+
+.med-found li b {
+  color: #071426;
+}
+
+.med-found li span {
+  display: block;
+  font-size: 11px;
+  color: #a16207;
+}
+
+.med-found p {
+  margin: 0;
+}
+
+.med-found p b {
+  color: #071426;
+}
+
+.med-found-none {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #6f7b78;
+}
+
+.med-error {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.med-submit {
+  width: 100%;
+  margin-top: 16px;
+  padding: 15px;
+  border: 0;
+  border-radius: 14px;
+  background: #8bcf3f;
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* ---------- 홈 일정: 약 카드 ---------- */
+.schedule-section-title {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6f7b78;
+}
+
+.card.med-dose {
+  background: #f8f9ff;
+  border-color: #dfe3fb;
+}
+
+.card.med-dose .circle {
+  border-color: #c7cdf6;
+}
+
+.card.med-dose .circle.checked {
+  background: #818cf8;
+}
+
+.card.med-dose .time {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.card.med-dose .med-badge {
+  border-radius: 6px;
+}

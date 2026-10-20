@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Heart, House, Search, Sparkles, UserRound } from "lucide-react";
 import "./Home.css";
 
@@ -21,6 +21,15 @@ import { useCloudSync } from "../hooks/useCloudSync";
 import { useDailyReset } from "../hooks/useDailyReset";
 import { useNotifications } from "../hooks/useNotifications";
 import { clearHistory, markAllRead, timeAgo } from "../services/notificationService";
+import {
+  loadMedications,
+  medsAsDoseItems,
+  saveMedications,
+  shortMedName,
+  type Medication,
+} from "../services/medicationService";
+import { separateFromMedications } from "../services/scheduleService";
+import type { MedNotice } from "./MedicationsView";
 
 export type Tab = "홈" | "검색" | "추천" | "찜" | "마이페이지";
 export type TimeCategory = "아침" | "점심" | "저녁";
@@ -57,9 +66,28 @@ export default function Home() {
     return DEFAULT_SUPPLEMENTS;
   });
 
+  // 복용 중인 약 (마이페이지에서 등록, 홈 일정에도 표시)
+  const [medications, setMedications] = useState<Medication[]>(loadMedications);
+  const [medNotice, setMedNotice] = useState<MedNotice | null>(null);
+  useEffect(() => saveMedications(medications), [medications]);
+  // 마이페이지에서 약을 등록해 영양제 시간이 바뀌어도 바로 저장 (홈탭을 열지 않아도)
+  useEffect(() => {
+    try {
+      localStorage.setItem("supplements", JSON.stringify(supplements));
+    } catch {
+      // 저장 공간이 없어도 화면은 계속 동작합니다.
+    }
+  }, [supplements]);
+
+  // 복용 시간 알림·서버 푸시에는 약 복용도 함께 (영양제와 같은 모양으로 바꿔서)
+  const doseItems = useMemo(
+    () => [...supplements, ...medsAsDoseItems(medications)],
+    [supplements, medications]
+  );
+
   const { history: notifications } = useNotifications();
-  useAlertScheduler(supplements, wishlist.wishlist);
-  useCloudSync(supplements, wishlist.wishlist);
+  useAlertScheduler(doseItems, wishlist.wishlist);
+  useCloudSync(doseItems, wishlist.wishlist);
   useDailyReset(setSupplements);
   useEffect(markDemoStockSeeded, []);
 
@@ -77,6 +105,20 @@ export default function Home() {
   const reAddFromHistory = (entry: HistoryEntry) => {
     setSupplements((prev) => [...prev, supplementFromHistory(entry)]);
     setActiveTab("홈");
+  };
+
+  // 약을 등록하면 설명서에 주의 성분이 있는 영양제를 간격을 두고 다른 시간으로 옮깁니다.
+  const addMedication = (medication: Medication) => {
+    const nextMeds = [...medications, medication];
+    const { next, moved } = separateFromMedications(supplements, nextMeds);
+    setMedications(nextMeds);
+    if (moved.length > 0) setSupplements(next);
+    // 옮긴 영양제가 있을 때만 안내를 바꿈 (없으면 이전 안내 유지)
+    if (moved.length > 0) setMedNotice({ medName: shortMedName(medication.name), moved });
+  };
+
+  const removeMedication = (id: number) => {
+    setMedications((prev) => prev.filter((item) => item.id !== id));
   };
 
   // 추천탭에서 성분을 누르면 그 성분으로 검색탭을 엽니다.
@@ -100,6 +142,10 @@ export default function Home() {
         <HomeTab
           supplements={supplements}
           setSupplements={setSupplements}
+          medications={medications}
+          setMedications={setMedications}
+          medNotice={medNotice}
+          onCloseMedNotice={() => setMedNotice(null)}
           onOpenNotification={openAlarmPage}
           onSearch={goToSearch}
           onRecommend={goToRecommendedSearch}
@@ -120,6 +166,7 @@ export default function Home() {
       {activeTab === "추천" && (
         <RecommendTab
           supplements={supplements}
+          medications={medications}
           onOpenNotification={openAlarmPage}
           onSearch={goToSearch}
           onRecommend={goToRecommendedSearch}
@@ -137,6 +184,11 @@ export default function Home() {
           onSearch={goToSearch}
           onRecommend={goToRecommendedSearch}
           onReAdd={reAddFromHistory}
+          medications={medications}
+          medNotice={medNotice}
+          onAddMedication={addMedication}
+          onRemoveMedication={removeMedication}
+          onCloseMedNotice={() => setMedNotice(null)}
         />
       )}
 

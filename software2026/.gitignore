@@ -38,3 +38,6 @@ firestore-debug.log*
 # 서비스 계정 키 (절대 커밋 금지)
 *-firebase-adminsdk-*.json
 service-account*.json
+
+# 배포할 때 공공데이터에서 받아 만드는 파일
+public/data/drugs.json

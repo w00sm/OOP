@@ -9,11 +9,20 @@ import {
   type IntakeAdvice,
 } from "../../services/intakeService";
 import { describeSurveys } from "../../services/surveyService";
+import {
+  describeMedications,
+  gapOf,
+  medsMentioning,
+  shortMedName,
+  type Medication,
+} from "../../services/medicationService";
+import { josa } from "../../utils/josa";
 import type { Supplement } from "../Home";
 import "../styles/RecommendTab.css";
 
 type RecommendTabProps = {
   supplements: Supplement[]; // 복용 관리 중인 영양제 (섭취량 계산에 사용)
+  medications: Medication[]; // 복용 중인 약 (AI 상담·추천 성분 주의 안내에 사용)
   onOpenNotification: () => void;
   onSearch: (keyword: string) => void;
   onRecommend: (ingredients: string[]) => void; // 추천 성분 전체로 검색탭 열기
@@ -37,6 +46,10 @@ type RecommendedItem = {
   reason?: string;
 };
 
+// 복용 중인 약이 있을 때 AI에게 주는 지침
+const MED_GUIDE =
+  " 사용자가 복용 중인 약이 있으면 약 설명서의 주의 성분과 겹치는 영양제는 피하거나 복용 간격을 안내하고, 약과 함께 먹어도 되는지는 의사·약사와 상담하라고 꼭 덧붙이세요. 약의 복용을 바꾸거나 끊으라고 하지 마세요.";
+
 // OpenAI 키가 없을 때 쓰는 규칙 기반 답변
 function ruleBasedReply(text: string) {
   const concerns = findConcerns(text);
@@ -50,8 +63,10 @@ export default function RecommendTab({
   onSearch,
   onRecommend,
   supplements,
+  medications,
 }: RecommendTabProps) {
   const currentYear = new Date().getFullYear();
+  const medsText = describeMedications(medications); // AI에게 알려줄 복용 중인 약
 
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<"남성" | "여성" | "">("");
@@ -130,7 +145,7 @@ export default function RecommendTab({
           {
             role: "system",
             content:
-              "당신은 친절하고 전문적인 영양 상담 AI입니다. 사용자의 정보와 고민을 바탕으로 핵심만 간단히 답하세요. 최대 2문장으로 짧고 명확하게 답변하세요. 불필요한 설명은 하지 마세요.",
+              `당신은 친절하고 전문적인 영양 상담 AI입니다. 사용자의 정보와 고민을 바탕으로 핵심만 간단히 답하세요. 최대 2문장으로 짧고 명확하게 답변하세요. 불필요한 설명은 하지 마세요.${MED_GUIDE}`,
           },
           {
             role: "user",
@@ -140,6 +155,7 @@ ${age ? `- 출생년도: ${age}` : ""}
 ${gender ? `- 성별: ${gender}` : ""}
 - 현재 복용 중인 영양제: ${describeCurrentSupplements(supplements)}
 ${describeSurveys() ? `- 지난 영양제 설문 결과: ${describeSurveys()}` : ""}
+${medsText ? `- 복용 중인 약(식약처 설명서 기준): ${medsText}` : ""}
 
 이 정보를 참고해서 이후 상담에 반영해주세요.
 `,
@@ -197,7 +213,7 @@ ${describeSurveys() ? `- 지난 영양제 설문 결과: ${describeSurveys()}` :
           {
             role: "system",
             content:
-              '당신은 전문 영양사입니다. 지금까지의 상담 내용을 바탕으로 사용자에게 필요해 보이는 영양 성분과 일반적인 권장 용량을 정리하세요. 반드시 JSON만 반환하세요. 형식은 {"items":[{"name":"비타민D","dose":"1000~2000IU"},{"name":"마그네슘","dose":"200~400mg"}]} 입니다. 제품명보다 영양 성분명을 우선 사용하고, 과장하거나 질병 치료처럼 표현하지 마세요. 사용자가 이미 복용 중인 영양제에 든 성분은 중복을 고려해 용량을 줄이거나 제외하고, 지난 설문에서 효과가 없었던 성분은 우선순위를 낮추세요.',
+              `당신은 전문 영양사입니다. 지금까지의 상담 내용을 바탕으로 사용자에게 필요해 보이는 영양 성분과 일반적인 권장 용량을 정리하세요. 반드시 JSON만 반환하세요. 형식은 {"items":[{"name":"비타민D","dose":"1000~2000IU"},{"name":"마그네슘","dose":"200~400mg"}]} 입니다. 제품명보다 영양 성분명을 우선 사용하고, 과장하거나 질병 치료처럼 표현하지 마세요. 사용자가 이미 복용 중인 영양제에 든 성분은 중복을 고려해 용량을 줄이거나 제외하고, 지난 설문에서 효과가 없었던 성분은 우선순위를 낮추세요.${MED_GUIDE}`,
           },
           {
             role: "user",
@@ -207,6 +223,7 @@ ${age ? `- 출생년도: ${age}` : ""}
 ${gender ? `- 성별: ${gender}` : ""}
 - 현재 복용 중인 영양제: ${describeCurrentSupplements(supplements)}
 ${describeSurveys() ? `- 지난 영양제 설문 결과: ${describeSurveys()}` : ""}
+${medsText ? `- 복용 중인 약(식약처 설명서 기준): ${medsText}` : ""}
 
 상담 내용:
 ${realConversation
@@ -428,6 +445,12 @@ ${realConversation
                   </strong>
                 </div>
                 {advice && <p className={`intake-advice ${advice.status}`}>{advice.message}</p>}
+                {medsMentioning(item.name, medications).map(({ med, hit }) => (
+                  <p className="intake-advice med" key={med.id}>
+                    💊 {josa(shortMedName(med.name), "과/와")} 겹쳐요. 설명서에 {hit.i} 주의가 있어
+                    {" "}{gapOf(hit)}시간 이상 간격을 두고, 함께 드셔도 되는지 약사와 상담하세요.
+                  </p>
+                ))}
                 {item.reason && <p>{item.reason}</p>}
               </button>
             ))}
