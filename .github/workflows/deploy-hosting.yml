@@ -67,3 +67,5 @@ jobs:
           projectId: fit-vita-e9160
           channelId: live
           entryPoint: software2026
+          # 15.34.1부터 배포 전에 '서비스 사용 권한'을 따로 확인해 지금 서비스 계정으로는 403이 나서, 잘 되던 버전으로 고정
+          firebaseToolsVersion: 15.34.0
