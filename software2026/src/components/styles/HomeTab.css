@@ -666,3 +666,89 @@ button.card-stock {
   color: #6f7b78;
   display: flex;
 }
+
+/* ---------- 라벨 사진으로 입력 ---------- */
+.add-form .label-scan-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 13px;
+  border-radius: 14px;
+  border: 1.5px dashed #8bcf3f;
+  background: #f8fff0;
+  color: #3f6e12;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.add-form .label-scan-button:disabled {
+  opacity: 0.7;
+}
+
+.label-scan-result {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f3fbe7;
+  font-size: 12px;
+  color: #3f6e12;
+}
+
+.label-scan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.label-scan-chips span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: white;
+  color: #071426;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------- 추가 전 상한 초과 경고 ---------- */
+.over-warning {
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #7f1d1d;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.over-warning strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #991b1b;
+}
+
+.over-warning p {
+  margin: 6px 0 0;
+}
+
+.over-warning-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.add-form .over-warning-buttons button {
+  flex: 1;
+  margin: 0;
+}
+
+.add-form .over-warning-buttons button.ghost {
+  background: #eef2ef;
+  color: #4b5563;
+}

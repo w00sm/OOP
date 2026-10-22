@@ -45,7 +45,10 @@ export type Supplement = {
   dailyDose?: number; // 하루 복용 개수 (기본 1)
   stockUpdatedAt?: string; // 잔여량을 새로 채운 시각 (한 통 단위로 재구매·설문 알림을 한 번씩 보내는 기준)
   stockInitial?: number; // 이 통을 채울 때의 잔여량 (복용 내역에 총 복용량으로 기록)
+  ingredients?: LabelIngredient[]; // 라벨 사진으로 읽은 성분 (1일 섭취량 기준). 있으면 섭취량 계산에 사용
 };
+
+export type LabelIngredient = { name: string; amount: number; unit: string };
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("홈");

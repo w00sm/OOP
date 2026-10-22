@@ -57,11 +57,36 @@ const obj = (unit: string) => (unit === "mg" || unit === "µg" ? "을" : "를");
 const range = ([min, max]: [number, number], unit: string) =>
   min === max ? fmt(min, unit) : `${nice(min).toLocaleString("ko-KR")}~${fmt(max, unit)}`;
 
+// 단위 비교용: "μg"·"µg"·"mcg" → "ug", "IU" → "iu"
+const normUnit = (unit: string) =>
+  unit
+    .toLowerCase()
+    .replace(/[μµ]/g, "u")
+    .replace("mcg", "ug")
+    .replace(/[^a-z가-힣]/g, "");
+
+// 라벨에서 읽은 함량을 이 성분의 기준 단위로 (바꿀 수 없으면 null)
+function labelAmount(nutrient: NutrientDose, amount: number, unit: string): number | null {
+  const base = nutrient.amount;
+  if (!base) return null;
+  if (normUnit(unit) === normUnit(base.unit)) return amount;
+  const rate = Object.entries(base.convert ?? {}).find(([key]) => normUnit(key) === normUnit(unit))?.[1];
+  return rate ? amount * rate : null;
+}
+
 // 복용 중인 영양제에서 이 성분이 얼마나 들어오는지
 function currentIntake(nutrient: NutrientDose, supplements: Supplement[]) {
   const sources: IntakeSource[] = [];
   for (const item of supplements) {
     const perDay = item.dailyDose && item.dailyDose > 0 ? item.dailyDose : 1;
+    // 라벨 사진으로 등록한 영양제: 라벨에 적힌 1일 섭취량 기준 함량을 그대로 사용
+    if (item.ingredients && item.ingredients.length > 0) {
+      const entry = item.ingredients.find((ingredient) => matches(nutrient, ingredient.name));
+      if (entry) {
+        sources.push({ name: item.name, amount: labelAmount(nutrient, entry.amount, entry.unit) });
+      }
+      continue;
+    }
     if (matches(nutrient, item.name)) {
       // 여러 성분이 섞인 제품(예: 칼슘 마그네슘 비타민D)은 이름의 숫자가 어느 성분 것인지 모르고
       // 성분마다 함량도 적게 들어가므로, 일반 함량을 성분 수로 나눠 추정합니다.
@@ -158,3 +183,38 @@ export function describeCurrentSupplements(supplements: Supplement[]) {
     .map((item) => `${item.name} (하루 ${item.dailyDose ?? 1}개)`)
     .join(", ");
 }
+
+// 영양제를 추가하면 상한을 넘게 되는 성분 (추가 전 경고용)
+export type OverLimit = {
+  nutrient: string;
+  unit: string;
+  before: number; // 지금 섭취량
+  after: number; // 추가한 뒤 섭취량
+  upper: number;
+  recommended: [number, number];
+  others: string[]; // 이미 이 성분을 먹고 있는 영양제
+};
+
+export function overLimitIfAdded(newItem: Supplement, supplements: Supplement[]): OverLimit[] {
+  return NUTRIENT_DOSES.flatMap((nutrient) => {
+    const upper = nutrient.amount?.upper;
+    if (!nutrient.amount || upper === undefined) return [];
+    const before = currentIntake(nutrient, supplements);
+    const after = currentIntake(nutrient, [...supplements, newItem]);
+    if (after.total <= upper || after.total <= before.total) return [];
+    return [
+      {
+        nutrient: nutrient.name,
+        unit: nutrient.amount.unit,
+        before: before.total,
+        after: after.total,
+        upper,
+        recommended: nutrient.amount.recommended,
+        others: before.sources.map((source) => source.name),
+      },
+    ];
+  });
+}
+
+// 경고 문구에 쓰는 숫자 표시: 5,400IU
+export const formatAmount = (value: number, unit: string) => fmt(value, unit);

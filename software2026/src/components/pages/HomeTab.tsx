@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
+  Camera,
   ClipboardCheck,
   Lightbulb,
   Moon,
@@ -25,7 +26,10 @@ import {
   suggestSchedule,
   timeToCategory,
   withTiming,
+  type ScheduleSuggestion,
 } from "../../services/scheduleService";
+import { formatAmount, overLimitIfAdded, type OverLimit } from "../../services/intakeService";
+import { LabelScanError, scanLabel, type LabelScan } from "../../services/labelScanService";
 import { forgetStockAlerts, notifyStockChange } from "../../services/alertChecks";
 import { type SurveyAction } from "../../services/surveyService";
 import {
@@ -108,6 +112,17 @@ export default function HomeTab({
   const [newStock, setNewStock] = useState("");
   const [formErrors, setFormErrors] = useState<{ name?: string; dose?: string }>({});
   const [scheduleNotice, setScheduleNotice] = useState<{ title: string; reasons: string[] } | null>(null);
+  // 라벨 사진으로 읽은 내용, 읽는 중 여부, 오류
+  const [scanned, setScanned] = useState<LabelScan | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState("");
+  const labelInputRef = useRef<HTMLInputElement>(null);
+  // 추가하면 상한을 넘는 성분이 있을 때 (그래도 추가 / 다시 고르기)
+  const [overWarning, setOverWarning] = useState<{
+    item: Supplement;
+    schedule: ScheduleSuggestion;
+    limits: OverLimit[];
+  } | null>(null);
   const [editingTimeId, setEditingTimeId] = useState<number | null>(null);
   const [editingStockId, setEditingStockId] = useState<number | null>(null);
   const [stockInput, setStockInput] = useState("");
@@ -170,6 +185,9 @@ export default function HomeTab({
   const closeAddForm = () => {
     setShowAddForm(false);
     setFormErrors({});
+    setScanned(null);
+    setScanError("");
+    setOverWarning(null);
   };
 
   const addSupplement = () => {
@@ -188,7 +206,7 @@ export default function HomeTab({
     const stock = Number(newStock);
 
     const newItem: Supplement = {
-      id: Date.now(),
+      id: newSupplementId(),
       name: newName.trim(),
       // 성분에 맞는 식전·식후·취침 전·공복을 자동으로 붙임 (예: "1정" → "1정 · 식후")
       desc: withTiming(newName, newDesc),
@@ -199,8 +217,19 @@ export default function HomeTab({
       dailyDose: dose.amount, // 하루 한 번 복용 기준, 체크할 때마다 이만큼 잔여량이 줄어듦
       stockUpdatedAt: newStock.trim() !== "" ? new Date().toISOString() : undefined,
       stockInitial: newStock.trim() !== "" && stock >= 0 ? Math.floor(stock) : undefined,
+      ingredients: scanned?.ingredients.length ? scanned.ingredients : undefined,
     };
 
+    // 추가하면 성분 하루 섭취량이 상한을 넘는지 먼저 확인 (넘으면 경고 후 사용자가 선택)
+    const limits = overLimitIfAdded(newItem, supplements);
+    if (limits.length > 0) {
+      setOverWarning({ item: newItem, schedule, limits });
+      return;
+    }
+    finishAdd(newItem, schedule);
+  };
+
+  const finishAdd = (newItem: Supplement, schedule: ScheduleSuggestion) => {
     setSupplements((prev) => [...prev, newItem]);
     setScheduleNotice({
       title: `${josa(newItem.name, "을/를")} ${schedule.timeCategory} ${schedule.time}에 배정했어요`,
@@ -214,6 +243,30 @@ export default function HomeTab({
     setSelectedTime(schedule.timeCategory);
     setStorageTips([]);
     setStorageMessage("");
+  };
+
+  // 라벨 사진 → 이름·1회 섭취량·잔여량·성분 자동 입력
+  const handleLabelFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // 같은 사진을 다시 골라도 동작하게
+    if (!file) return;
+    setScanError("");
+    setOverWarning(null);
+    setScanning(true);
+    try {
+      const result = await scanLabel(file);
+      setScanned(result);
+      setNewName(result.name);
+      setNewDesc(result.dose);
+      if (result.totalCount) setNewStock(String(result.totalCount));
+      setFormErrors({});
+    } catch (error) {
+      setScanError(
+        error instanceof LabelScanError ? error.message : "라벨을 읽지 못했어요. 다시 시도해 주세요."
+      );
+    } finally {
+      setScanning(false);
+    }
   };
 
   // 복용 체크 시 남은 수량을 하루 복용량만큼 줄이고, 체크 해제하면 되돌립니다.
@@ -453,11 +506,40 @@ export default function HomeTab({
             </button>
           </div>
 
+          <button
+            type="button"
+            className="label-scan-button"
+            disabled={scanning}
+            onClick={() => labelInputRef.current?.click()}
+          >
+            <Camera size={18} />
+            {scanning ? "라벨을 읽는 중…" : scanned ? "다른 라벨 사진으로 다시 입력" : "라벨 사진으로 입력하기"}
+          </button>
+          {/* capture를 빼서 카메라로 찍기·앨범에서 고르기를 모두 선택할 수 있게 */}
+          <input ref={labelInputRef} type="file" accept="image/*" hidden onChange={handleLabelFile} />
+          {scanError && <p className="add-form-error">{scanError}</p>}
+          {scanned && (
+            <div className="label-scan-result">
+              <strong>사진에서 읽었어요. 맞는지 확인해 주세요.</strong>
+              {scanned.ingredients.length > 0 && (
+                <div className="label-scan-chips">
+                  {scanned.ingredients.slice(0, 8).map((item) => (
+                    <span key={item.name}>
+                      {item.name} {item.amount.toLocaleString("ko-KR")}
+                      {item.unit}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <input
             className={formErrors.name ? "invalid" : ""}
             value={newName}
             onChange={(e) => {
               setNewName(e.target.value);
+              setOverWarning(null);
               setFormErrors((prev) => ({ ...prev, name: undefined }));
             }}
             placeholder="영양제 이름 (필수)"
@@ -469,6 +551,7 @@ export default function HomeTab({
             value={newDesc}
             onChange={(e) => {
               setNewDesc(e.target.value);
+              setOverWarning(null);
               setFormErrors((prev) => ({ ...prev, dose: undefined }));
             }}
             placeholder="복용 방법 예: 1정 (필수)"
@@ -491,7 +574,34 @@ export default function HomeTab({
             잔여량을 입력하면 떨어지기 7일 전과 3일 전에 알림을 보내드려요.
           </p>
 
-          <button onClick={addSupplement}>추가하기</button>
+          {overWarning ? (
+            <div
+              className="over-warning"
+              ref={(element) => element?.scrollIntoView({ behavior: "smooth", block: "center" })}
+            >
+              <strong>
+                <TriangleAlert size={15} />
+                추가하면 {josa(overWarning.limits.map((limit) => limit.nutrient).join("·"), "이/가")} 상한을 넘어요
+              </strong>
+              {overWarning.limits.map((limit) => (
+                <p key={limit.nutrient}>{describeOverLimit(limit)}</p>
+              ))}
+              <div className="over-warning-buttons">
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => finishAdd(overWarning.item, overWarning.schedule)}
+                >
+                  그래도 추가
+                </button>
+                <button type="button" onClick={() => setOverWarning(null)}>
+                  다시 고를게요
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={addSupplement}>추가하기</button>
+          )}
         </div>
       )}
 
@@ -978,3 +1088,24 @@ function getDateKey(date: Date) {
 
   return `${year}-${month}-${day}`;
 }
+
+// 상한 초과 경고 문장: 지금 섭취량 → 추가 후 섭취량, 그리고 맞는 제품 함량
+function describeOverLimit(limit: OverLimit) {
+  const { unit, before, after, upper, recommended, others } = limit;
+  const now =
+    others.length > 0
+      ? `지금 ${josa(others.join(", "), "으로/로")} 약 ${josa(formatAmount(before, unit), "을/를")} 드시고 있어서, 추가하면 하루 약 ${josa(formatAmount(after, unit), "이/가")} 돼요.`
+      : `이 영양제만으로 하루 약 ${josa(formatAmount(after, unit), "을/를")} 드시게 돼요.`;
+  const low = Math.max(0, recommended[0] - before);
+  const high = Math.min(recommended[1], upper) - before;
+  const tip =
+    high <= 0
+      ? "이미 충분히 드시고 있어 더 드시지 않아도 돼요."
+      : low > 0 && Math.round(low) !== Math.round(high)
+        ? `${formatAmount(low, unit).replace(unit, "")}~${formatAmount(high, unit)} 제품을 고르면 권장량에 맞아요.`
+        : `${formatAmount(high, unit)} 이하 제품을 고르면 권장량에 맞아요.`;
+  return `${now} (상한 ${formatAmount(upper, unit)}) → ${tip}`;
+}
+
+// 새 영양제 ID (등록 시각)
+const newSupplementId = () => Date.now();
