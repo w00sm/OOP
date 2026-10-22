@@ -6,8 +6,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: #f7faf7;
+  padding: 24px 20px;
+  background: radial-gradient(circle at 50% 35%, #ffffff 0%, #f3faea 55%, #e9f5dc 100%);
   color: #071426;
   opacity: 1;
   transition: opacity 0.35s ease;
@@ -28,50 +28,68 @@
   color: #6aa82c;
 }
 
-/* 스프라이트 시트 한 칸(229 x 221)을 보여줌. 위치는 컴포넌트에서 컷·구간별로 지정 */
-.loading-character {
-  width: 220px;
-  aspect-ratio: 229 / 221;
-  background-image: url("/loading/character-sheet.png");
-  background-size: 300% 500%;
-  background-repeat: no-repeat;
-  /* 컷이 바뀔 때 부드럽게 넘어가지 않고 뚝뚝 끊겨야 스톱모션처럼 보입니다 */
-  transition: none;
+/* 그림: 흑백(아래) + 색(위, 진행률만큼 보임) */
+.loading-art {
+  position: relative;
+  width: min(240px, 62vw);
+  aspect-ratio: 1;
 }
 
-.loading-rate {
-  margin-top: 20px;
-  font-size: 15px;
-  color: #6f7b78;
-}
-
-.loading-rate strong {
-  margin-left: 4px;
-  font-size: 22px;
-  font-weight: 900;
-  color: #071426;
-}
-
-.loading-bar {
-  width: 180px;
-  height: 8px;
-  margin-top: 12px;
-  border-radius: 999px;
-  background: #e5ece7;
-  overflow: hidden;
-}
-
-.loading-bar span {
-  display: block;
+.loading-art svg,
+.loading-art-color {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #c8f27d, #5dcb6a);
-  transition: none;
 }
 
-.loading-message {
-  margin: 14px 0 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: #4b5563;
+.loading-art-gray {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.loading-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 22px;
+}
+
+.loading-ingredient {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #071426;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.loading-mine {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid #c7e3a5;
+  color: #3f6e12;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* 한 문장은 항상 한 줄로 (좁은 화면에서는 글씨를 조금 줄임) */
+.loading-caption {
+  max-width: 100%;
+  margin: 12px 0 0;
+  font-size: min(17px, 4.3vw);
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loading-percent {
+  position: absolute;
+  bottom: calc(36px + env(safe-area-inset-bottom));
+  font-size: 13px;
+  font-weight: 800;
+  color: #9aa3a0;
+  font-variant-numeric: tabular-nums;
 }

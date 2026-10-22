@@ -4,13 +4,12 @@
 // - 알림을 누르면 열려 있는 앱 창으로 이동하거나 새로 엽니다.
 // - 서버 푸시(FCM)를 붙일 때 push 이벤트 처리도 이 파일에 추가합니다.
 
-const CACHE_NAME = "fitvita-v6";
+const CACHE_NAME = "fitvita-v7";
 const APP_SHELL = [
   "/",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/loading/character-sheet.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -55,8 +54,7 @@ self.addEventListener("fetch", (event) => {
   // 정적 파일: 저장된 것 우선, 없으면 받아서 저장
   if (
     url.pathname.startsWith("/assets/") ||
-    url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/loading/")
+    url.pathname.startsWith("/icons/")
   ) {
     event.respondWith(
       caches.match(request).then(
