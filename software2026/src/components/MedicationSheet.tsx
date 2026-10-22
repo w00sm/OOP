@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Search, TriangleAlert, X } from "lucide-react";
 import type { Supplement, TimeCategory } from "./Home";
-import { loadDrugs, searchDrugs, type DrugEntry } from "../services/drugService";
+import {
+  hasRxSearch,
+  loadDrugDetail,
+  loadDrugs,
+  searchDrugs,
+  type DrugEntry,
+} from "../services/drugService";
 import {
   MED_KIND_LABELS,
   MED_TIMINGS,
@@ -46,19 +52,27 @@ export default function MedicationSheet({
   const [dose, setDose] = useState("1정");
   const [until, setUntil] = useState("");
   const [error, setError] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [rxError, setRxError] = useState(false); // 처방약 검색 실패
+  // 처방약을 고르면 설명서를 불러오는 중 / 실패
+  const [detailState, setDetailState] = useState<"idle" | "loading" | "failed">("idle");
 
   useEffect(() => {
     loadDrugs().then((drugs) => setDrugCount(drugs.length));
   }, []);
 
-  // 입력이 멈추면 검색
+  // 입력이 멈추면 검색 (처방약은 서버에서 찾으니 조금 더 기다렸다가)
   useEffect(() => {
     let cancelled = false;
     const timer = window.setTimeout(() => {
-      searchDrugs(query, kind).then((list) => {
-        if (!cancelled) setResults(list);
+      setSearching(true);
+      searchDrugs(query, kind).then(({ drugs, rxError: failed }) => {
+        if (cancelled) return;
+        setResults(drugs);
+        setRxError(failed);
+        setSearching(false);
       });
-    }, 150);
+    }, kind === "otc" ? 150 : 350);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
@@ -100,9 +114,20 @@ export default function MedicationSheet({
     setSelected(drug);
     setCustomMode(false);
     setError("");
+    setDetailState("idle");
+    if (!drug.remote) return;
+    // 처방약: 사용상의 주의사항에서 영양제 주의 성분을 찾아 옴
+    setDetailState("loading");
+    loadDrugDetail(drug.s)
+      .then((detail) => {
+        setSelected((prev) => (prev?.s === drug.s ? { ...prev, ...detail, remote: false } : prev));
+        setDetailState("idle");
+      })
+      .catch(() => setDetailState("failed"));
   };
 
   const submit = () => {
+    if (detailState === "loading") return;
     if (!draft) {
       setError(customMode ? "약 이름을 입력해주세요." : "약을 검색해서 선택해주세요.");
       return;
@@ -114,7 +139,9 @@ export default function MedicationSheet({
     onSubmit({ ...draft, id: Date.now() });
   };
 
-  const showRxPending = kind === "rx" && query.trim() !== "" && results.length === 0;
+  // 처방약 검색을 못 쓰는 경우 (중계 서버 주소가 없는 개발 환경)
+  const showRxPending = kind === "rx" && !hasRxSearch && query.trim() !== "";
+  const rxTooShort = kind === "rx" && hasRxSearch && query.trim().length === 1;
 
   return (
     <div className="survey-overlay" role="dialog" aria-modal="true" aria-label="복용 중인 약 추가">
@@ -167,8 +194,17 @@ export default function MedicationSheet({
               )}
               {showRxPending && (
                 <p className="med-results-empty">
-                  처방약 정보는 준비 중이에요. 우선 '직접 입력하기'로 등록해 주세요.
+                  처방약 검색을 쓸 수 없어요. '직접 입력하기'로 등록해 주세요.
                 </p>
+              )}
+              {rxError && (
+                <p className="med-results-empty">
+                  처방약 정보를 불러오지 못했어요. 잠시 후 다시 검색하거나 직접 입력해 주세요.
+                </p>
+              )}
+              {rxTooShort && <p className="med-results-empty">처방약은 두 글자 이상 입력해 주세요.</p>}
+              {searching && results.length === 0 && query.trim().length >= 2 && (
+                <p className="med-results-empty">찾는 중…</p>
               )}
               {results.map((drug) => (
                 <button
@@ -187,7 +223,8 @@ export default function MedicationSheet({
                   </small>
                 </button>
               ))}
-              {query.trim() !== "" && drugCount !== 0 && results.length === 0 && !showRxPending && (
+              {query.trim() !== "" && !searching && drugCount !== 0 && results.length === 0 &&
+                !showRxPending && !rxError && !rxTooShort && (
                 <p className="med-results-empty">검색 결과가 없어요.</p>
               )}
               <button
@@ -293,17 +330,28 @@ export default function MedicationSheet({
           </div>
         )}
 
-        {draft && draft.hits.length === 0 && !customMode && (
+        {detailState === "loading" && (
+          <p className="med-found-none">설명서에서 영양제 주의 성분을 확인하는 중…</p>
+        )}
+        {detailState === "failed" && (
+          <p className="med-found-none">설명서를 불러오지 못해 영양제 주의 성분은 확인하지 못했어요.</p>
+        )}
+        {draft && draft.hits.length === 0 && !customMode && detailState === "idle" && (
           <p className="med-found-none">설명서에서 영양제 주의 성분은 찾지 못했어요.</p>
         )}
 
         {error && <p className="med-error">{error}</p>}
 
-        <button type="button" className="med-submit" onClick={submit}>
-          등록하기
+        <button
+          type="button"
+          className="med-submit"
+          disabled={detailState === "loading"}
+          onClick={submit}
+        >
+          {detailState === "loading" ? "설명서 확인 중…" : "등록하기"}
         </button>
         <p className="med-source">
-          식품의약품안전처 의약품개요정보(e약은요) 기준 안내예요. 정확한 복용법은 의사·약사와 상담하세요.
+          식품의약품안전처 의약품개요정보(e약은요)·의약품 제품 허가정보 기준 안내예요. 정확한 복용법은 의사·약사와 상담하세요.
         </p>
       </div>
     </div>

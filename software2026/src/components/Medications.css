@@ -575,3 +575,7 @@
   background: #f1f3fe;
   color: #4338ca;
 }
+
+.med-submit:disabled {
+  opacity: 0.6;
+}

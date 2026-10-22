@@ -5,6 +5,7 @@
 #   CLOUDFLARE_API_TOKEN  : Cloudflare API 토큰 ("Edit Cloudflare Workers" 템플릿)
 #   CLOUDFLARE_ACCOUNT_ID : Cloudflare 계정 ID
 #   OPENAI_API_KEY        : OpenAI 키 (중계 서버의 비밀값으로만 저장되고 앱에는 들어가지 않음)
+#   DATA_GO_KR_KEY        : 공공데이터포털 인증키 (처방약 검색, 이미 등록되어 있음)
 
 name: AI 중계 서버 배포
 
@@ -45,8 +46,10 @@ jobs:
           workingDirectory: software2026/ai-proxy
           secrets: |
             OPENAI_API_KEY
+            DATA_GO_KR_KEY
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
 
       # 배포 후 실제로 AI에 짧게 물어봐서 키·결제가 정상인지 확인 (응답 내용만 출력, 키는 출력 안 됨)
       - name: 동작 확인
@@ -60,4 +63,16 @@ jobs:
           echo "응답 코드: $code"
           head -c 400 res.json; echo
           test "$code" = "200"
-
+          # 처방약 검색 확인 (씬지로이드)
+          code=$(curl -s -o drug.json -w "%{http_code}" -G "https://fitvita-ai.woosumin0328.workers.dev/drugs/search" \
+            --data-urlencode "q=씬지로이드" -H "Origin: https://fit-vita-e9160.web.app")
+          echo "처방약 검색 응답 코드: $code"
+          head -c 400 drug.json; echo
+          test "$code" = "200"
+          seq=$(python3 -c "import json;d=json.load(open('drug.json'))['drugs'];print(d[0]['s'] if d else '')")
+          if [ -n "$seq" ]; then
+            code=$(curl -s -o detail.json -w "%{http_code}" "https://fitvita-ai.woosumin0328.workers.dev/drugs/detail?seq=$seq" -H "Origin: https://fit-vita-e9160.web.app")
+            echo "처방약 상세 응답 코드: $code"
+            head -c 600 detail.json; echo
+            test "$code" = "200"
+          fi
