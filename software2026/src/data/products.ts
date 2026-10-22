@@ -2,6 +2,12 @@
 // 네이버쇼핑 검색 API(2026-07-31 종료)의 응답 필드명(productId, title, lprice, mallName, link, image)을
 // 그대로 따라서, 나중에 다른 쇼핑 API로 바꿀 때 화면 코드를 고치지 않아도 되게 했습니다.
 // 브랜드와 가격은 모두 시연용 가상 데이터입니다.
+// 아래 24개는 직접 적은 상품이고, 나머지는 productCatalog.ts가 종류별 20개쯤 되도록 만듭니다.
+
+import { buildCatalog } from "./productCatalog";
+
+// 제형 (상품 이미지 모양에 사용): 정 / 소프트젤 / 캡슐 / 스틱·포 / 구미 / 액상
+export type ProductForm = "tablet" | "softgel" | "capsule" | "stick" | "gummy" | "liquid";
 
 export type ProductSeed = {
   productId: string;
@@ -15,9 +21,10 @@ export type ProductSeed = {
   count: number; // 1통에 들어 있는 정/캡슐 수
   dailyDose: number; // 1일 섭취량 (정/캡슐)
   image: string; // 이미지 URL (없으면 화면에서 기본 이미지 표시)
+  form?: ProductForm; // 없으면 상품명(정·캡슐·포)으로 판단
 };
 
-export const PRODUCT_SEEDS: ProductSeed[] = [
+const BASE_SEEDS: ProductSeed[] = [
   {
     productId: "p001",
     title: "데일리 멀티비타민 미네랄 90정",
@@ -331,3 +338,5 @@ export const PRODUCT_SEEDS: ProductSeed[] = [
     image: "",
   },
 ];
+
+export const PRODUCT_SEEDS: ProductSeed[] = [...BASE_SEEDS, ...buildCatalog(BASE_SEEDS)];

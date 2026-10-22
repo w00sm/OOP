@@ -25,9 +25,8 @@ export default function ProductDetailSheet({
   onClose,
 }: ProductDetailSheetProps) {
   const stats = getPriceStats(product);
-  const cheapest = product.offers[0];
   const days = Math.floor(product.count / Math.max(1, product.dailyDose));
-  const unit = product.title.match(/\d+\s*(정|캡슐|포)/)?.[1] ?? "정";
+  const unit = product.title.match(/\d+\s*(정|캡슐|포|구미|ml)/)?.[1] ?? "정";
 
   return (
     <div className="survey-overlay" role="dialog" aria-modal="true" aria-label={product.title}>
@@ -124,7 +123,7 @@ export default function ProductDetailSheet({
           </button>
           <a className="product-sheet-buy" href={product.link} target="_blank" rel="noreferrer">
             <ShoppingBag size={18} />
-            {cheapest.mall}에서 {formatPrice(cheapest.price)}에 구매
+            구매하기
           </a>
         </div>
       </div>
