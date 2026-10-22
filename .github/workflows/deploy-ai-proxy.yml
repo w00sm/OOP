@@ -47,3 +47,17 @@ jobs:
             OPENAI_API_KEY
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      # 배포 후 실제로 AI에 짧게 물어봐서 키·결제가 정상인지 확인 (응답 내용만 출력, 키는 출력 안 됨)
+      - name: 동작 확인
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        working-directory: .
+        run: |
+          sleep 5
+          code=$(curl -s -o res.json -w "%{http_code}" -X POST "https://fitvita-ai.woosumin0328.workers.dev/v1/chat/completions" \
+            -H "Origin: https://fit-vita-e9160.web.app" -H "Content-Type: application/json" \
+            -d '{"model":"gpt-4o-mini","max_tokens":5,"messages":[{"role":"user","content":"Reply with OK"}]}')
+          echo "응답 코드: $code"
+          head -c 400 res.json; echo
+          test "$code" = "200"
+
