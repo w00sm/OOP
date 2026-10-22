@@ -1,0 +1,49 @@
+# Fit Vita AI 중계 서버 자동 배포 (Cloudflare Workers)
+# software2026/ai-proxy가 바뀌면 Cloudflare에 배포합니다. 직접 실행(workflow_dispatch)도 가능해요.
+#
+# 준비: 저장소 Settings → Secrets and variables → Actions 에 아래 세 가지
+#   CLOUDFLARE_API_TOKEN  : Cloudflare API 토큰 ("Edit Cloudflare Workers" 템플릿)
+#   CLOUDFLARE_ACCOUNT_ID : Cloudflare 계정 ID
+#   OPENAI_API_KEY        : OpenAI 키 (중계 서버의 비밀값으로만 저장되고 앱에는 들어가지 않음)
+
+name: AI 중계 서버 배포
+
+on:
+  push:
+    branches:
+      - main
+      - claude/powershell-install-script-question-6vy5cy
+    paths:
+      - "software2026/ai-proxy/**"
+      - ".github/workflows/deploy-ai-proxy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-ai-proxy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: 시크릿 확인
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::warning::CLOUDFLARE_API_TOKEN 시크릿이 없어 AI 중계 서버 배포를 건너뜁니다."
+
+      - uses: actions/checkout@v4
+        if: env.CLOUDFLARE_API_TOKEN != ''
+
+      - name: Cloudflare Workers 배포
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: software2026/ai-proxy
+          secrets: |
+            OPENAI_API_KEY
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

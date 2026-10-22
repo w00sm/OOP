@@ -1,0 +1,12 @@
+# Fit Vita AI 중계 서버 (Cloudflare Workers)
+# 앱이 OpenAI를 직접 부르지 않고 이 서버를 거치게 해서, OpenAI 키를 앱 코드에 넣지 않습니다.
+# 배포: GitHub Actions(.github/workflows/deploy-ai-proxy.yml)가 자동으로 합니다.
+# 키(OPENAI_API_KEY)는 Cloudflare 비밀값으로만 저장됩니다.
+
+name = "fitvita-ai"
+main = "src/index.ts"
+compatibility_date = "2025-09-01"
+
+[vars]
+# 이 주소에서 열린 앱만 중계 서버를 쓸 수 있어요 (쉼표로 구분)
+ALLOWED_ORIGINS = "https://fit-vita-e9160.web.app,https://fit-vita-e9160.firebaseapp.com,http://localhost:5173"
