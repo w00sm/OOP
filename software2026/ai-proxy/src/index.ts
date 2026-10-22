@@ -186,7 +186,8 @@ async function handleDrugs(url: URL, env: Env, cors: Record<string, string>) {
         c: item.ENTP_NAME,
         k: item.ETC_OTC_CODE === "전문의약품" ? "rx" : "otc",
         e: short(plainText(item.EE_DOC_DATA), 90),
-        h: findDrugHits(caution),
+        // 긴 설명서라 함께 먹는 것(병용·간격·흡수)에 관한 문장만 사용
+        h: findDrugHits(caution, { onlyTogether: true }),
       };
     } else {
       return json(404, "지원하지 않는 요청입니다.", cors);

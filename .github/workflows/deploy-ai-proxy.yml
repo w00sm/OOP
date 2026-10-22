@@ -73,6 +73,6 @@ jobs:
           if [ -n "$seq" ]; then
             code=$(curl -s -o detail.json -w "%{http_code}" "https://fitvita-ai.woosumin0328.workers.dev/drugs/detail?seq=$seq" -H "Origin: https://fit-vita-e9160.web.app")
             echo "처방약 상세 응답 코드: $code"
-            head -c 600 detail.json; echo
+            python3 -c "import json;d=json.load(open('detail.json'));print('약:',d.get('n'));[print(' 주의 성분:',h['i'],h['g'],'시간 |',h['t'][:80]) for h in d.get('h',[])]" || head -c 600 detail.json
             test "$code" = "200"
           fi

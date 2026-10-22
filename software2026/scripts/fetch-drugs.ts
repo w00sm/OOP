@@ -68,7 +68,7 @@ export function toEntry(item: EasyDrugItem): DrugEntry {
     c: item.entpName.trim(),
     k: "otc",
     e: short(item.efcyQesitm, 90),
-    h: findDrugHits(item.intrcQesitm, item.atpnQesitm, item.atpnWarnQesitm),
+    h: findDrugHits([item.intrcQesitm, item.atpnQesitm, item.atpnWarnQesitm]),
   };
 }
 
