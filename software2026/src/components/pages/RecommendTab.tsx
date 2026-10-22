@@ -30,7 +30,6 @@ type RecommendTabProps = {
 
 type SavedProfile = {
   name: string;
-  email: string;
   gender: "남성" | "여성";
   birthYear: string;
 };

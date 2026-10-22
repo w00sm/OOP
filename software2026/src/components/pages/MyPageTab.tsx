@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 import NotificationBell from "../NotificationBell";
 import {
+  ArchiveRestore,
   Bell,
   ChevronLeft,
   ChevronRight,
   History,
   Megaphone,
+  Pencil,
   Pill,
   UserRound,
 } from "lucide-react";
-import GoogleLoginButton from "../GoogleLoginButton";
+import BackupView from "../BackupView";
 import IntakeHistory from "../IntakeHistory";
 import MedicationsView, { type MedNotice } from "../MedicationsView";
 import type { Medication } from "../../services/medicationService";
@@ -39,19 +41,13 @@ const PUSH_STATUS_TEXT: Record<PushStatus, string> = {
 };
 import "../styles/MyPageTab.css";
 
-type MyPageView = "main" | "meds" | "history" | "info" | "alarm" | "notice";
+type MyPageView = "main" | "meds" | "history" | "info" | "alarm" | "notice" | "backup";
 
 type Notice = {
   id: number;
   title: string;
   date: string;
   content: string;
-};
-
-type LoginUser = {
-  name: string;
-  email: string;
-  picture?: string;
 };
 
 type MyPageTabProps = {
@@ -84,23 +80,12 @@ export default function MyPageTab({
   const [myPageView, setMyPageView] = useState<MyPageView>("main");
   const [modalMessage, setModalMessage] = useState("");
 
-  const [loginUser, setLoginUser] = useState<LoginUser | null>(() => {
-    const saved = localStorage.getItem("loginUser");
-    return saved ? JSON.parse(saved) : null;
-  });
-
-  const [profileName, setProfileName] = useState(() => {
-    const saved = localStorage.getItem("loginUser");
-    return saved ? JSON.parse(saved).name : "";
-  });
-
-  const [profileEmail, setProfileEmail] = useState(() => {
-    const saved = localStorage.getItem("loginUser");
-    return saved ? JSON.parse(saved).email : "";
-  });
-
-  const [profileGender, setProfileGender] = useState<"남성" | "여성">("남성");
-  const [profileBirthYear, setProfileBirthYear] = useState("1990");
+  // 내 정보 (로그인 없이 이 기기에 저장)
+  const [savedProfile] = useState(loadProfile);
+  const [profileName, setProfileName] = useState(savedProfile.name);
+  const [displayName, setDisplayName] = useState(savedProfile.name); // 저장된 이름 (프로필 카드에 표시)
+  const [profileGender, setProfileGender] = useState<"남성" | "여성">(savedProfile.gender);
+  const [profileBirthYear, setProfileBirthYear] = useState(savedProfile.birthYear);
 
   const { settings, permission } = useNotifications();
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null);
@@ -189,28 +174,15 @@ export default function MyPageTab({
     setMyPageView("main");
   };
 
-  const handleGoogleLogin = (user: LoginUser) => {
-    setLoginUser(user);
-    setProfileName(user.name);
-    setProfileEmail(user.email);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("loginUser");
-    setLoginUser(null);
-    setProfileName("");
-    setProfileEmail("");
-  };
-
   const handleSaveProfile = () => {
     const profile = {
-      name: profileName,
-      email: profileEmail,
+      name: profileName.trim(),
       gender: profileGender,
       birthYear: profileBirthYear,
     };
 
     localStorage.setItem("userHealthProfile", JSON.stringify(profile));
+    setDisplayName(profile.name);
     setModalMessage("내 정보가 저장되었습니다.");
   };
 
@@ -263,33 +235,27 @@ export default function MyPageTab({
             <NotificationBell onClick={onOpenNotification} className="mypage-bell-button" />
           </div>
 
-          {loginUser ? (
-            <div className="mypage-profile-card">
-              {loginUser.picture ? (
-                <img
-                  src={loginUser.picture}
-                  alt="프로필"
-                  className="mypage-profile-image"
-                />
-              ) : (
-                <div className="mypage-profile-icon">
-                  <UserRound size={26} color="white" />
-                </div>
-              )}
+          <button
+            type="button"
+            className="mypage-profile-card"
+            onClick={() => setMyPageView("info")}
+          >
+            <div className="mypage-profile-icon">
+              <UserRound size={26} color="white" />
+            </div>
 
-              <div>
-                <div className="mypage-profile-name">{loginUser.name}님</div>
-                <div className="mypage-profile-desc">
-                  건강한 하루 되세요!
-                </div>
+            <div className="mypage-profile-text">
+              <div className="mypage-profile-name">
+                {displayName ? `${displayName}님` : "내 정보를 입력해 주세요"}
+              </div>
+              <div className="mypage-profile-desc">
+                {displayName
+                  ? "건강한 하루 되세요!"
+                  : "이름·성별·출생년도를 입력하면 맞춤 추천에 활용돼요."}
               </div>
             </div>
-          ) : (
-            <div className="mypage-login-card">
-              <p>로그인 후 마이페이지를 이용할 수 있어요.</p>
-              <GoogleLoginButton onLogin={handleGoogleLogin} />
-            </div>
-          )}
+            <Pencil size={16} className="mypage-profile-edit" />
+          </button>
 
           <div className="mypage-menu-list">
             <button
@@ -346,6 +312,18 @@ export default function MyPageTab({
             <button
               type="button"
               className="mypage-menu-item"
+              onClick={() => setMyPageView("backup")}
+            >
+              <span className="mypage-menu-left">
+                <span className="mypage-menu-icon"><ArchiveRestore size={18} /></span>
+                데이터 백업·복원
+              </span>
+              <span className="mypage-menu-arrow"><ChevronRight size={20} /></span>
+            </button>
+
+            <button
+              type="button"
+              className="mypage-menu-item"
               onClick={() => setMyPageView("notice")}
             >
               <span className="mypage-menu-left">
@@ -356,15 +334,9 @@ export default function MyPageTab({
             </button>
           </div>
 
-          {loginUser && (
-            <button
-              type="button"
-              className="mypage-logout"
-              onClick={handleLogout}
-            >
-              ↪ 로그아웃
-            </button>
-          )}
+          <p className="mypage-local-note">
+            회원가입 없이 이용해요. 기록은 이 기기에만 저장되니 기기를 바꿀 땐 백업·복원을 이용하세요.
+          </p>
         </>
       )}
 
@@ -384,14 +356,7 @@ export default function MyPageTab({
             <input
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
-              placeholder="이름을 입력하세요"
-            />
-
-            <label>이메일</label>
-            <input
-              value={profileEmail}
-              onChange={(e) => setProfileEmail(e.target.value)}
-              placeholder="이메일을 입력하세요"
+              placeholder="이름이나 닉네임을 입력하세요"
             />
           </div>
 
@@ -531,6 +496,8 @@ export default function MyPageTab({
         />
       )}
 
+      {myPageView === "backup" && <BackupView onBack={goMain} />}
+
       {myPageView === "history" && (
         <IntakeHistory
           supplements={supplements}
@@ -576,4 +543,22 @@ export default function MyPageTab({
       )}
     </div>
   );
+}
+
+type Profile = { name: string; gender: "남성" | "여성"; birthYear: string };
+
+// 저장된 내 정보 (예전에 구글 로그인으로 저장된 이름이 있으면 처음 한 번 이어서 사용)
+function loadProfile(): Profile {
+  const fallback: Profile = { name: "", gender: "남성", birthYear: "1990" };
+  try {
+    const saved = JSON.parse(localStorage.getItem("userHealthProfile") ?? "null");
+    const legacyName = JSON.parse(localStorage.getItem("loginUser") ?? "null")?.name ?? "";
+    return {
+      name: saved?.name || legacyName || "",
+      gender: saved?.gender === "여성" ? "여성" : "남성",
+      birthYear: saved?.birthYear || fallback.birthYear,
+    };
+  } catch {
+    return fallback;
+  }
 }

@@ -31,6 +31,7 @@
 }
 
 .mypage-profile-card {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -39,6 +40,179 @@
   border-radius: 12px;
   background: #f6fbef;
   border: 1px solid #d9eec5;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mypage-profile-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mypage-profile-edit {
+  flex-shrink: 0;
+  color: #9aa3a0;
+}
+
+.mypage-local-note {
+  margin: 18px 4px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9aa3a0;
+  text-align: center;
+}
+
+/* ---------- 데이터 백업·복원 ---------- */
+.backup-guide {
+  margin: -6px 0 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6f7b78;
+  text-align: center;
+}
+
+.backup-card {
+  margin-bottom: 12px;
+  padding: 18px;
+  border-radius: 16px;
+  background: white;
+  border: 1px solid #e1e7e3;
+}
+
+.backup-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.backup-card-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.backup-card-head p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #6f7b78;
+}
+
+.backup-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f2f8ea;
+  color: #5f8f2a;
+}
+
+.backup-icon.restore {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.backup-summary {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f7faf7;
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.backup-summary b {
+  color: #071426;
+}
+
+.backup-small {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  color: #9aa3a0;
+}
+
+.backup-button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #8bcf3f;
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.backup-button.secondary {
+  background: white;
+  border: 1.5px solid #8bcf3f;
+  color: #5f8f2a;
+}
+
+.backup-message,
+.backup-error {
+  margin: 4px 2px 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.backup-message {
+  background: #f3fbe7;
+  color: #3f6e12;
+}
+
+.backup-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.backup-privacy {
+  display: flex;
+  gap: 6px;
+  margin: 8px 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9aa3a0;
+}
+
+.backup-privacy svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.custom-modal-card.backup-confirm p {
+  margin-bottom: 12px;
+}
+
+.custom-modal-card .backup-summary {
+  grid-template-columns: 1fr;
+  margin: 0 0 12px;
+}
+
+.custom-modal-card p.backup-warning {
+  font-size: 13px;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.backup-confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.custom-modal-card .backup-confirm-buttons button.secondary {
+  background: #eef2ef;
+  color: #4b5563;
 }
 
 .mypage-profile-icon {
@@ -104,18 +278,6 @@
 .mypage-menu-arrow {
   color: #9aa3a0;
   display: flex;
-}
-
-.mypage-logout {
-  width: 100%;
-  margin-top: 28px;
-  padding: 15px;
-  border: 1px solid #e1e7e3;
-  border-radius: 10px;
-  background: white;
-  color: #ef233c;
-  font-size: 14px;
-  font-weight: 800;
 }
 
 .mypage-sub-header {
@@ -320,32 +482,6 @@
   color: #465061;
   font-size: 12px;
   line-height: 1.45;
-}
-
-.mypage-login-card {
-  margin-bottom: 26px;
-  padding: 22px 20px;
-  border-radius: 12px;
-  background: #f6fbef;
-  border: 1px solid #d9eec5;
-  text-align: center;
-}
-
-.mypage-login-card p {
-  margin: 0 0 14px;
-  font-size: 13px;
-  color: #667085;
-}
-
-.google-login-wrap {
-  display: flex;
-  justify-content: center;
-}MyPageTab.tsx
-
-.mypage-profile-image {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
 }
 
 .custom-modal-overlay {
