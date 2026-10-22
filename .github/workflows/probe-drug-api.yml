@@ -64,8 +64,10 @@ jobs:
           probe "e약은요 목록" "https://apis.data.go.kr/1471000/DrbEasyDrugInfoService/getDrbEasyDrugList" \
             --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "itemName=타이레놀"
 
-          # 허가정보 API는 서비스 버전마다 주소가 달라서, 승인된 버전을 찾기 위해 여러 버전을 확인
-          for svc in DrugPrdtPrmsnInfoService07:getDrugPrdtPrmsnInq07 DrugPrdtPrmsnInfoService06:getDrugPrdtPrmsnInq06 DrugPrdtPrmsnInfoService05:getDrugPrdtPrmsnInq05 DrugPrdtPrmsnInfoService04:getDrugPrdtPrmsnInq04; do
-            probe "허가정보 ${svc}" "https://apis.data.go.kr/1471000/${svc%%:*}/${svc##*:}" \
-              --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "item_name=씬지로이드"
+          # 허가정보 API: 승인된 기능은 Inq08 (서비스 이름 버전은 07·08 둘 다 확인)
+          for svc in DrugPrdtPrmsnInfoService07 DrugPrdtPrmsnInfoService08; do
+            for op in getDrugPrdtPrmsnInq08 getDrugPrdtPrmsnDtlInq08 getDrugPrdtMcpnDtlInq08; do
+              probe "허가정보 $svc/$op" "https://apis.data.go.kr/1471000/$svc/$op" \
+                --data-urlencode "type=json" --data-urlencode "numOfRows=1" --data-urlencode "item_name=씬지로이드"
+            done
           done
