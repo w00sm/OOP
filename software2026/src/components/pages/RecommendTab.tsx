@@ -18,6 +18,7 @@ import {
 } from "../../services/medicationService";
 import { josa } from "../../utils/josa";
 import type { Supplement } from "../Home";
+import ClearableInput from "../common/ClearableInput";
 import "../styles/RecommendTab.css";
 
 type RecommendTabProps = {
@@ -389,7 +390,9 @@ ${realConversation
           </div>
 
           <div className="ai-input-row">
-            <input
+            <ClearableInput
+              wrapperClassName="grow"
+              onClear={() => setUserInput("")}
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               placeholder="증상을 입력하세요..."

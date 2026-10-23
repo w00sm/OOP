@@ -31,6 +31,7 @@ import {
   type SupplementMovePlan,
 } from "../../services/scheduleService";
 import MoveConfirmModal from "../MoveConfirmModal";
+import ClearableInput from "../common/ClearableInput";
 import { formatAmount, overLimitIfAdded, type OverLimit } from "../../services/intakeService";
 import { LabelScanError, scanLabel, type LabelScan } from "../../services/labelScanService";
 import { forgetStockAlerts, notifyStockChange } from "../../services/alertChecks";
@@ -187,8 +188,12 @@ export default function HomeTab({
     localStorage.setItem("dailySupplementRecords", JSON.stringify(dailyRecords));
   }, [dailyRecords]);
 
+  // 영양제 추가 창 닫기: 적어 둔 내용도 모두 초기화
   const closeAddForm = () => {
     setShowAddForm(false);
+    setNewName("");
+    setNewDesc("");
+    setNewStock("");
     setFormErrors({});
     setScanned(null);
     setScanError("");
@@ -577,7 +582,12 @@ export default function HomeTab({
             </div>
           )}
 
-          <input
+          <ClearableInput
+            onClear={() => {
+              setNewName("");
+              setScanned(null); // 라벨로 읽은 성분도 같이 지움
+              setOverWarning(null);
+            }}
             className={formErrors.name ? "invalid" : ""}
             value={newName}
             onChange={(e) => {
@@ -589,7 +599,11 @@ export default function HomeTab({
           />
           {formErrors.name && <p className="add-form-error">{formErrors.name}</p>}
 
-          <input
+          <ClearableInput
+            onClear={() => {
+              setNewDesc("");
+              setOverWarning(null);
+            }}
             className={formErrors.dose ? "invalid" : ""}
             value={newDesc}
             onChange={(e) => {
@@ -603,7 +617,8 @@ export default function HomeTab({
 
           <label className="add-form-label">
             잔여량
-            <input
+            <ClearableInput
+              onClear={() => setNewStock("")}
               type="number"
               inputMode="numeric"
               min="0"
@@ -703,6 +718,7 @@ export default function HomeTab({
           keepNote={`옮기지 않으면 ${josa(moveAsk.item.name, "을/를")} ${moveAsk.plan.fallback.timeCategory} ${moveAsk.plan.fallback.time}에 배정해요.`}
           onMove={() => answerMove(true)}
           onKeep={() => answerMove(false)}
+          onClose={() => setMoveAsk(null)}
         />
       )}
 
@@ -911,7 +927,8 @@ export default function HomeTab({
                     <div className="stock-editor">
                       <label>
                         잔여량
-                        <input
+                        <ClearableInput
+                          onClear={() => setStockInput("")}
                           type="number"
                           inputMode="numeric"
                           min="0"

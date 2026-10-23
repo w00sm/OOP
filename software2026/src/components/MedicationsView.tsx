@@ -148,11 +148,14 @@ export default function MedicationsView({
           medications={medications}
           onClose={() => setShowSheet(false)}
           onSubmit={(medication) => {
-            setShowSheet(false);
             // 겹치는 영양제가 있으면 옮길지 먼저 물어봄 (약은 옮기지 않음)
             const { moved } = separateFromMedications(supplements, [...medications, medication]);
-            if (moved.length > 0) setMoveAsk({ medication, moved });
-            else onAdd(medication, false);
+            if (moved.length > 0) {
+              setMoveAsk({ medication, moved }); // 시트는 열어 둠 (X를 누르면 시트로 돌아감)
+              return;
+            }
+            onAdd(medication, false);
+            setShowSheet(false);
           }}
         />
       )}
@@ -165,11 +168,14 @@ export default function MedicationsView({
           onMove={() => {
             onAdd(moveAsk.medication, true);
             setMoveAsk(null);
+            setShowSheet(false);
           }}
           onKeep={() => {
             onAdd(moveAsk.medication, false);
             setMoveAsk(null);
+            setShowSheet(false);
           }}
+          onClose={() => setMoveAsk(null)}
         />
       )}
 

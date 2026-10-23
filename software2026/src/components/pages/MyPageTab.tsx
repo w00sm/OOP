@@ -12,6 +12,7 @@ import {
   UserRound,
 } from "lucide-react";
 import BackupView from "../BackupView";
+import ClearableInput from "../common/ClearableInput";
 import IntakeHistory from "../IntakeHistory";
 import MedicationsView, { type MedNotice } from "../MedicationsView";
 import type { Medication } from "../../services/medicationService";
@@ -353,7 +354,8 @@ export default function MyPageTab({
             <h2>기본 정보</h2>
 
             <label>이름</label>
-            <input
+            <ClearableInput
+              onClear={() => setProfileName("")}
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
               placeholder="이름이나 닉네임을 입력하세요"

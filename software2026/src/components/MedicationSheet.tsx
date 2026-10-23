@@ -18,6 +18,7 @@ import {
   type MedTiming,
 } from "../services/medicationService";
 import { separateFromMedications } from "../services/scheduleService";
+import ClearableInput from "./common/ClearableInput";
 
 // 마이페이지 → 복용 중인 약 → 추가 시트
 // 공공데이터에서 약을 검색해 고르고(또는 직접 입력), 시간대·복용 방법을 정하면
@@ -247,7 +248,8 @@ export default function MedicationSheet({
 
         {customMode && (
           <div className="med-custom">
-            <input
+            <ClearableInput
+              onClear={() => setCustomName("")}
               value={customName}
               autoFocus
               onChange={(e) => {
@@ -298,11 +300,11 @@ export default function MedicationSheet({
         <div className="med-inline-fields">
           <label>
             1회 복용량
-            <input value={dose} onChange={(e) => setDose(e.target.value)} placeholder="1정" />
+            <ClearableInput onClear={() => setDose("")} value={dose} onChange={(e) => setDose(e.target.value)} placeholder="1정" />
           </label>
           <label>
             언제까지 <small>(선택)</small>
-            <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} />
+            <ClearableInput onClear={() => setUntil("")} type="date" value={until} onChange={(e) => setUntil(e.target.value)} />
           </label>
         </div>
 

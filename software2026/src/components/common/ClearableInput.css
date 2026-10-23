@@ -1,0 +1,81 @@
+.clearable {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.clearable.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.clearable > input {
+  width: 100%;
+  padding-right: 40px !important;
+}
+
+/* 숫자 칸: 위아래 화살표를 숨겨 X 자리를 만듦 (숫자는 키보드로 입력) */
+.clearable > input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.clearable > input[type="number"]::-webkit-inner-spin-button,
+.clearable > input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 날짜 칸: 달력 아이콘 왼쪽에 X */
+.clearable > input[type="date"] {
+  padding-right: 72px !important;
+}
+
+.clearable > button.clear-input {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #d7ded9;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.clearable > input[type="date"] + button.clear-input {
+  right: 42px;
+}
+
+/* 영양제 추가 칸: 아래 여백을 감싸는 상자로 옮겨 X가 가운데에 오게 */
+.add-form .clearable {
+  margin-bottom: 10px;
+}
+
+.add-form .clearable > input {
+  margin-bottom: 0;
+}
+
+.add-form .clearable:has(> input.invalid) {
+  margin-bottom: 4px;
+}
+
+.add-form .clearable > input.invalid {
+  margin-bottom: 0;
+}
+
+/* 내 정보 칸도 아래 여백을 감싸는 상자로 */
+.mypage-form-card .clearable {
+  margin-bottom: 16px;
+}
+
+.mypage-form-card .clearable > input {
+  margin-bottom: 0;
+}

@@ -1,4 +1,4 @@
-import { ArrowRight, Clock } from "lucide-react";
+import { ArrowRight, Clock, X } from "lucide-react";
 import "./MoveConfirmModal.css";
 
 // 영양제·약을 추가할 때 겹치는 기존 영양제 시간을 옮길지 묻는 창
@@ -13,6 +13,7 @@ type MoveConfirmModalProps = {
   moveNote?: string; // "옮기기"를 고르면 새로 추가하는 것은 어떻게 되는지
   onMove: () => void;
   onKeep: () => void;
+  onClose: () => void; // X: 추가하지 않고 창 닫기
 };
 
 export default function MoveConfirmModal({
@@ -22,10 +23,14 @@ export default function MoveConfirmModal({
   moveNote,
   onMove,
   onKeep,
+  onClose,
 }: MoveConfirmModalProps) {
   return (
     <div className="custom-modal-overlay" role="dialog" aria-modal="true" aria-label={title}>
       <div className="custom-modal-card move-confirm">
+        <button type="button" className="move-confirm-close" aria-label="추가하지 않고 닫기" onClick={onClose}>
+          <X size={18} />
+        </button>
         <div className="move-confirm-icon">
           <Clock size={22} />
         </div>
