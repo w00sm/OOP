@@ -187,7 +187,7 @@ export default function MedicationSheet({
             </div>
 
             <div className="med-results">
-              {drugCount === 0 && (
+              {drugCount === 0 && !hasRxSearch && (
                 <p className="med-results-empty">
                   의약품 목록을 불러오지 못했어요. 아래 '직접 입력하기'로 등록해 주세요.
                 </p>

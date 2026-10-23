@@ -53,13 +53,19 @@ export async function searchDrugs(query: string, kind: "all" | "otc" | "rx" = "a
   const q = normalize(query);
   if (q.length === 0) return { drugs: [], rxError: false };
 
-  const local = kind === "rx" ? [] : (await loadDrugs()).filter((drug) => kind === "all" || drug.k === kind);
+  const all = await loadDrugs();
+  const local = kind === "rx" ? [] : all.filter((drug) => kind === "all" || drug.k === kind);
+  // 일반약 목록을 받지 못했으면(배포 중 공공데이터 오류 등) 일반약도 서버 검색으로 대신
+  const localMissing = all.length === 0;
   let rx: DrugEntry[] = [];
   let rxError = false;
-  if (kind !== "otc" && hasRxSearch && query.trim().length >= 2) {
+  if ((kind !== "otc" || localMissing) && hasRxSearch && query.trim().length >= 2) {
     try {
-      // 일반약은 설명이 더 쉬운 e약은요 쪽을 쓰고, 허가정보에서는 처방약(전문의약품)만
-      rx = (await searchRx(query)).filter((drug) => drug.k === "rx");
+      const remote = await searchRx(query);
+      // 평소에는 일반약은 설명이 쉬운 e약은요 목록을 쓰고, 서버 검색에서는 처방약만
+      rx = remote.filter((drug) =>
+        localMissing ? kind === "all" || drug.k === kind : drug.k === "rx"
+      );
     } catch {
       rxError = true;
     }

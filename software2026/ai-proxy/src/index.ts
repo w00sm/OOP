@@ -138,8 +138,16 @@ async function callDrugApi(env: Env, operation: string, params: Record<string, s
     type: "json",
     ...params,
   });
-  const response = await fetch(`${DRUG_API}/${operation}?${query}`);
-  if (!response.ok) throw new Error(`공공데이터 ${response.status}`);
+  // 공공데이터가 느릴 때 오래 붙잡지 않도록 8초 제한, 한 번 더 시도
+  let response: Response | null = null;
+  for (let attempt = 1; attempt <= 2 && !response?.ok; attempt++) {
+    try {
+      response = await fetch(`${DRUG_API}/${operation}?${query}`, { signal: AbortSignal.timeout(8000) });
+    } catch (error) {
+      if (attempt === 2) throw error;
+    }
+  }
+  if (!response?.ok) throw new Error(`공공데이터 ${response?.status}`);
   const data = (await response.json()) as { body?: { items?: DrugItem[] | { item?: DrugItem[] } } };
   const items = data.body?.items;
   if (!items) return [];
