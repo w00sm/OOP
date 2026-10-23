@@ -182,8 +182,8 @@ async function showSystemNotification(title: string, body: string, tag: string) 
     body,
     tag,
     renotify: true,
-    icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
+    icon: "/icons/icon-192.png?v=2",
+    badge: "/icons/icon-192.png?v=2",
   };
   try {
     // 서비스워커가 있으면(배포 모드) 그쪽으로 띄워야 모바일에서도 표시됩니다.

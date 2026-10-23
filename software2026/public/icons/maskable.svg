@@ -13,13 +13,18 @@
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
   <rect width="512" height="512" fill="url(#shine)"/>
-  <g id="mark" transform="translate(256 256) scale(0.74) translate(-256 -256) translate(-14 8)">
-    <g fill="none" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M126 368 V156 H226 M126 256 H208"/>
-      <path d="M276 156 L334 368 L392 156"/>
+  <g id="mark" transform="translate(256 256) scale(0.74) translate(-259 -266)">
+    <!-- 곡선 F -->
+    <g fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M96 380 V214 C96 178 120 152 156 152 H204"/>
+      <path d="M96 266 H178"/>
     </g>
-    <!-- 잎사귀 포인트 -->
-    <path d="M392 156 C392 112 420 86 462 82 C462 124 436 152 392 156 Z" fill="#FFFFFF" opacity="0.92"/>
-    <path d="M396 150 L440 104" stroke="#5DCB6A" stroke-width="6" stroke-linecap="round"/>
+    <!-- 잎 두 장으로 만든 새싹 V -->
+    <path d="M320 392 C262 340 236 250 256 150 C318 192 344 290 320 392 Z" fill="#FFFFFF"/>
+    <path d="M320 392 C326 296 362 206 424 154 C440 250 398 340 320 392 Z" fill="#FFFFFF" opacity="0.82"/>
+    <g fill="none" stroke="#5DCB6A" stroke-width="6" stroke-linecap="round">
+      <path d="M314 360 C306 300 290 240 268 186"/>
+      <path d="M330 360 C346 292 374 236 410 190"/>
+    </g>
   </g>
 </svg>

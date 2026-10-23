@@ -68,7 +68,7 @@ export default function InstallBanner() {
 
   return (
     <div className="install-banner">
-      <img src="/icons/icon-192.png" alt="" className="install-banner-icon" />
+      <img src="/icons/icon-192.png?v=2" alt="" className="install-banner-icon" />
       <div className="install-banner-text">
         <strong>Fit Vita 앱으로 쓰기</strong>
         {installEvent ? (
