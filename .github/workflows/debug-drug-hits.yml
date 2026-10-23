@@ -19,15 +19,20 @@ jobs:
           KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: |
           KEY=$(printf '%s' "$KEY" | tr -d '[:space:]')
-          curl -sS -G --max-time 30 "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService08/getDrugPrdtPrmsnDtlInq08" \
-            --data-urlencode "serviceKey=$KEY" --data-urlencode "type=json" --data-urlencode "item_seq=197400278" -o detail.json
-          wc -c detail.json
+          base="https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService08/getDrugPrdtPrmsnDtlInq08"
+          curl -sS -G --max-time 30 "$base" --data-urlencode "serviceKey=$KEY" --data-urlencode "type=json" --data-urlencode "item_seq=197400278" -o detail.json
+          curl -sS -G --max-time 30 "$base" --data-urlencode "serviceKey=$KEY" --data-urlencode "type=json" --data-urlencode "item_name=씬지로이드" --data-urlencode "numOfRows=1" -o byname.json
+          wc -c detail.json byname.json
+          for f in detail.json byname.json; do python3 -c "
+          import json,sys
+          d=json.load(open('$f')); it=d['body']['items']; it=it[0] if isinstance(it,list) else it['item'][0]
+          print('$f', it.get('ITEM_NAME'), {k: len(str(v or '')) for k,v in it.items() if k.endswith('DOC_DATA')})"; done
       - name: 주의 성분 찾기
         run: |
           cat > check.mts <<'TS'
           import { readFileSync } from "node:fs";
           import { findDrugHits } from "./src/services/drugWarnings.ts";
-          const raw = JSON.parse(readFileSync("detail.json", "utf8"));
+          const raw = JSON.parse(readFileSync("byname.json", "utf8"));
           const items = raw.body.items; const item = Array.isArray(items) ? items[0] : items.item[0];
           const plain = String(item.NB_DOC_DATA ?? "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
           console.log("글자 수:", plain.length);
