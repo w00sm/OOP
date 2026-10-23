@@ -1,0 +1,39 @@
+# 임시: 실제 설명서로 주의 성분 찾기 결과 확인 (확인 후 삭제)
+name: 주의 성분 찾기 확인 (임시)
+on:
+  push:
+    branches: [claude/powershell-install-script-question-6vy5cy]
+    paths: [".github/workflows/debug-drug-hits.yml"]
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: software2026
+    steps:
+      - uses: actions/checkout@v4
+      - name: 실제 설명서 받기
+        env:
+          KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: |
+          KEY=$(printf '%s' "$KEY" | tr -d '[:space:]')
+          curl -sS -G --max-time 30 "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService08/getDrugPrdtPrmsnDtlInq08" \
+            --data-urlencode "serviceKey=$KEY" --data-urlencode "type=json" --data-urlencode "item_seq=197400278" -o detail.json
+          wc -c detail.json
+      - name: 주의 성분 찾기
+        run: |
+          cat > check.mts <<'TS'
+          import { readFileSync } from "node:fs";
+          import { findDrugHits } from "./src/services/drugWarnings.ts";
+          const raw = JSON.parse(readFileSync("detail.json", "utf8"));
+          const items = raw.body.items; const item = Array.isArray(items) ? items[0] : items.item[0];
+          const plain = String(item.NB_DOC_DATA ?? "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+          console.log("글자 수:", plain.length);
+          const i = plain.indexOf("철분"); console.log("철분 주변:", JSON.stringify(plain.slice(Math.max(0, i - 120), i + 160)));
+          const sentences = plain.split(/(?<=[.다])\s+/);
+          console.log("문장 수:", sentences.length, "/ 철분 문장:", JSON.stringify(sentences.find((s) => s.includes("철분"))?.slice(0, 200)));
+          console.log("결과:", JSON.stringify(findDrugHits(plain, { onlyTogether: true })));
+          TS
+          npx --yes tsx@4 check.mts
