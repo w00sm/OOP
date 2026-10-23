@@ -230,9 +230,34 @@
 }
 
 .calendar-section h2 {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 19px;
   font-weight: 800;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 14px;
+}
+
+.calendar-nav {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #e1e7e3;
+  border-radius: 12px;
+  background: white;
+  color: #071426;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-nav:disabled {
+  color: #c4ccc8;
+  background: #f6f8f7;
 }
 
 .calendar-grid {

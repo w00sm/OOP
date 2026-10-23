@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   Camera,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Lightbulb,
   Moon,
@@ -59,6 +61,8 @@ import {
   type Medication,
 } from "../../services/medicationService";
 import "../Medications.css";
+
+const MAX_PAST_MONTHS = 11; // 이번 달 포함 최근 12개월
 import "../styles/HomeTab.css";
 
 type HomeTabProps = {
@@ -104,9 +108,12 @@ export default function HomeTab({
   onRecommend,
 }: HomeTabProps) {
   const today = new Date();
-  const calendarYear = today.getFullYear();
-  const calendarMonth = today.getMonth() + 1;
   const todayKey = getDateKey(today);
+  // 달력: 이번 달(0)부터 지난 달로 최대 MAX_PAST_MONTHS개월까지 넘겨 볼 수 있어요. 미래 달은 없어요.
+  const [monthOffset, setMonthOffset] = useState(0);
+  const shownMonth = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1);
+  const calendarYear = shownMonth.getFullYear();
+  const calendarMonth = shownMonth.getMonth() + 1;
 
   const [homeView, setHomeView] = useState<"일정" | "달력" | "보관법">("일정");
   const [selectedTime, setSelectedTime] = useState<TimeCategory>("아침");
@@ -488,6 +495,12 @@ export default function HomeTab({
   };
 
   const daysInMonth = new Date(calendarYear, calendarMonth, 0).getDate();
+  // 1일이 무슨 요일인지에 맞춰 앞을 비워 둡니다.
+  const firstWeekday = shownMonth.getDay();
+  const moveMonth = (delta: number) => {
+    setSelectedDay(null);
+    setMonthOffset((prev) => Math.min(MAX_PAST_MONTHS, Math.max(0, prev + delta)));
+  };
 
   const selectedDateKey =
     selectedDay !== null
@@ -1022,15 +1035,39 @@ export default function HomeTab({
 
       {homeView === "달력" && (
         <div className="calendar-section">
-          <h2>
-            {calendarYear}년 {calendarMonth}월
-          </h2>
+          <div className="calendar-head">
+            <button
+              type="button"
+              className="calendar-nav"
+              aria-label="이전 달"
+              disabled={monthOffset >= MAX_PAST_MONTHS}
+              onClick={() => moveMonth(1)}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <h2>
+              {calendarYear}년 {calendarMonth}월
+            </h2>
+            <button
+              type="button"
+              className="calendar-nav"
+              aria-label="다음 달"
+              disabled={monthOffset === 0}
+              onClick={() => moveMonth(-1)}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
 
           <div className="calendar-grid">
             {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
               <div className="calendar-day-name" key={day}>
                 {day}
               </div>
+            ))}
+
+            {Array.from({ length: firstWeekday }, (_, i) => (
+              <div className="calendar-blank" key={`blank-${i}`} />
             ))}
 
             {Array.from({ length: daysInMonth }, (_, i) => {
