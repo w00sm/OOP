@@ -81,9 +81,16 @@ export async function searchDrugs(query: string, kind: "all" | "otc" | "rx" = "a
 }
 
 // 처방약을 고르면: 설명서(사용상의 주의사항)에서 찾은 영양제 주의 성분과 효능
-export async function loadDrugDetail(seq: string): Promise<Pick<DrugEntry, "e" | "h">> {
+// noLeaflet: 공공데이터가 지금 설명서를 주지 않음 (주의 성분을 확인하지 못한 것이지, 없는 게 아님)
+export async function loadDrugDetail(
+  seq: string
+): Promise<Pick<DrugEntry, "e" | "h"> & { noLeaflet: boolean }> {
   const response = await fetch(`${PROXY_URL}/drugs/detail?seq=${encodeURIComponent(seq)}`);
   if (!response.ok) throw new Error(`처방약 상세 ${response.status}`);
   const data = await response.json();
-  return { e: String(data.e ?? ""), h: Array.isArray(data.h) ? data.h : [] };
+  return {
+    e: String(data.e ?? ""),
+    h: Array.isArray(data.h) ? data.h : [],
+    noLeaflet: Boolean(data.noLeaflet),
+  };
 }

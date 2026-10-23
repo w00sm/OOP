@@ -55,7 +55,7 @@ export default function MedicationSheet({
   const [searching, setSearching] = useState(false);
   const [rxError, setRxError] = useState(false); // 처방약 검색 실패
   // 처방약을 고르면 설명서를 불러오는 중 / 실패
-  const [detailState, setDetailState] = useState<"idle" | "loading" | "failed">("idle");
+  const [detailState, setDetailState] = useState<"idle" | "loading" | "failed" | "noLeaflet">("idle");
 
   useEffect(() => {
     loadDrugs().then((drugs) => setDrugCount(drugs.length));
@@ -119,9 +119,11 @@ export default function MedicationSheet({
     // 처방약: 사용상의 주의사항에서 영양제 주의 성분을 찾아 옴
     setDetailState("loading");
     loadDrugDetail(drug.s)
-      .then((detail) => {
-        setSelected((prev) => (prev?.s === drug.s ? { ...prev, ...detail, remote: false } : prev));
-        setDetailState("idle");
+      .then(({ noLeaflet, e, h }) => {
+        setSelected((prev) =>
+          prev?.s === drug.s ? { ...prev, e: e || prev.e, h, remote: false } : prev
+        );
+        setDetailState(noLeaflet ? "noLeaflet" : "idle");
       })
       .catch(() => setDetailState("failed"));
   };
@@ -335,6 +337,12 @@ export default function MedicationSheet({
         )}
         {detailState === "failed" && (
           <p className="med-found-none">설명서를 불러오지 못해 영양제 주의 성분은 확인하지 못했어요.</p>
+        )}
+        {detailState === "noLeaflet" && (
+          <p className="med-found-none">
+            지금은 식약처에서 이 약의 설명서를 받을 수 없어 영양제 주의 성분을 확인하지 못했어요. 나중에
+            다시 등록하면 확인할 수 있어요.
+          </p>
         )}
         {draft && draft.hits.length === 0 && !customMode && detailState === "idle" && (
           <p className="med-found-none">설명서에서 영양제 주의 성분은 찾지 못했어요.</p>

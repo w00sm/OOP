@@ -17,7 +17,7 @@ type Env = {
 const DRUG_API = "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService08";
 const DRUG_CACHE_SECONDS = 60 * 60 * 24; // 같은 검색·상세는 하루 동안 저장해 둔 결과 사용
 // 주의 성분 찾는 방식을 바꾸면 이 숫자를 올려서 예전에 저장한 결과를 쓰지 않게 합니다
-const DRUG_CACHE_VERSION = "2";
+const DRUG_CACHE_VERSION = "3";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const ALLOWED_MODELS = new Set(["gpt-4o-mini"]);
@@ -166,6 +166,7 @@ async function handleDrugs(url: URL, env: Env, cors: Record<string, string>) {
   if (cached) return withCors(cached, cors);
 
   let payload: unknown;
+  let noLeaflet = false;
   try {
     if (url.pathname === "/drugs/search") {
       const q = (url.searchParams.get("q") ?? "").trim();
@@ -190,12 +191,15 @@ async function handleDrugs(url: URL, env: Env, cors: Record<string, string>) {
       const [item] = await callDrugApi(env, "getDrugPrdtPrmsnDtlInq08", { item_seq: seq, numOfRows: "1" });
       if (!item) return json(404, "의약품을 찾지 못했어요.", cors);
       const caution = plainText(item.NB_DOC_DATA);
+      // 공공데이터가 가끔 설명서 문서를 빈 값으로 주는 때가 있어 따로 알려 줌 (이때는 저장하지 않음)
+      noLeaflet = caution === "";
       payload = {
         s: item.ITEM_SEQ,
         n: item.ITEM_NAME,
         c: item.ENTP_NAME,
         k: item.ETC_OTC_CODE === "전문의약품" ? "rx" : "otc",
         e: short(plainText(item.EE_DOC_DATA), 90),
+        noLeaflet,
         // 긴 설명서라 함께 먹는 것(병용·간격·흡수)에 관한 문장만 사용
         h: findDrugHits(caution, { onlyTogether: true }),
       };
@@ -210,7 +214,7 @@ async function handleDrugs(url: URL, env: Env, cors: Record<string, string>) {
   const response = new Response(JSON.stringify(payload), {
     headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${DRUG_CACHE_SECONDS}` },
   });
-  await cache.put(cacheKey, response.clone());
+  if (!noLeaflet) await cache.put(cacheKey, response.clone());
   return withCors(response, cors);
 }
 
