@@ -4,6 +4,7 @@
   line-height: 1.5;
   color: #6f7b78;
   text-align: center;
+  word-break: keep-all;
 }
 
 .history-empty {
@@ -20,6 +21,7 @@
   font-size: 14px;
   line-height: 1.6;
   text-align: center;
+  word-break: keep-all;
   color: #6f7b78;
 }
 

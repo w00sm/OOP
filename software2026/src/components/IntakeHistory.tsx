@@ -52,7 +52,9 @@ export default function IntakeHistory({
       </div>
 
       <p className="history-guide">
-        다 드신 영양제가 기록돼요. 누르면 설문으로 재구매가 필요한지 알려드려요.
+        다 드신 영양제가 기록돼요.
+        <br />
+        누르면 설문으로 재구매가 필요한지 알려드려요.
       </p>
 
       {entries.length === 0 && (
