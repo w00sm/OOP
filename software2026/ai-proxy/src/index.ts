@@ -16,6 +16,8 @@ type Env = {
 
 const DRUG_API = "https://apis.data.go.kr/1471000/DrugPrdtPrmsnInfoService08";
 const DRUG_CACHE_SECONDS = 60 * 60 * 24; // 같은 검색·상세는 하루 동안 저장해 둔 결과 사용
+// 주의 성분 찾는 방식을 바꾸면 이 숫자를 올려서 예전에 저장한 결과를 쓰지 않게 합니다
+const DRUG_CACHE_VERSION = "2";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const ALLOWED_MODELS = new Set(["gpt-4o-mini"]);
@@ -159,7 +161,7 @@ async function handleDrugs(url: URL, env: Env, cors: Record<string, string>) {
 
   // 같은 요청은 Cloudflare 캐시에 하루 저장 (공공데이터 호출 횟수·속도 절약)
   const cache = (caches as unknown as { default: Cache }).default;
-  const cacheKey = new Request(`https://drug-cache${url.pathname}?${url.searchParams}`);
+  const cacheKey = new Request(`https://drug-cache/v${DRUG_CACHE_VERSION}${url.pathname}?${url.searchParams}`);
   const cached = await cache.match(cacheKey);
   if (cached) return withCors(cached, cors);
 
