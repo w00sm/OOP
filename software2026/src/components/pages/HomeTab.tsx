@@ -26,8 +26,11 @@ import {
   suggestSchedule,
   timeToCategory,
   withTiming,
+  planMovesForNewSupplement,
   type ScheduleSuggestion,
+  type SupplementMovePlan,
 } from "../../services/scheduleService";
+import MoveConfirmModal from "../MoveConfirmModal";
 import { formatAmount, overLimitIfAdded, type OverLimit } from "../../services/intakeService";
 import { LabelScanError, scanLabel, type LabelScan } from "../../services/labelScanService";
 import { forgetStockAlerts, notifyStockChange } from "../../services/alertChecks";
@@ -117,6 +120,8 @@ export default function HomeTab({
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState("");
   const labelInputRef = useRef<HTMLInputElement>(null);
+  // 기존 영양제를 옮길지 묻는 중
+  const [moveAsk, setMoveAsk] = useState<{ item: Supplement; plan: SupplementMovePlan } | null>(null);
   // 추가하면 상한을 넘는 성분이 있을 때 (그래도 추가 / 다시 고르기)
   const [overWarning, setOverWarning] = useState<{
     item: Supplement;
@@ -229,7 +234,45 @@ export default function HomeTab({
     finishAdd(newItem, schedule);
   };
 
+  // 추가 마지막 단계: 새 영양제를 좋은 시간에 두려면 기존 영양제를 옮겨야 하는 경우 먼저 물어봄
   const finishAdd = (newItem: Supplement, schedule: ScheduleSuggestion) => {
+    const plan = planMovesForNewSupplement(newItem.name, supplements, medications);
+    if (plan.moves.length > 0) {
+      setOverWarning(null);
+      setMoveAsk({ item: newItem, plan });
+      return;
+    }
+    commitAdd(newItem, schedule);
+  };
+
+  // 옮기기: 새 영양제는 좋은 시간에, 겹치는 기존 영양제는 다른 시간으로 / 옮기지 않기: 새 영양제가 피해서
+  const answerMove = (move: boolean) => {
+    if (!moveAsk) return;
+    const { item, plan } = moveAsk;
+    setMoveAsk(null);
+    if (!move) {
+      commitAdd({ ...item, time: plan.fallback.time, timeCategory: plan.fallback.timeCategory }, plan.fallback);
+      return;
+    }
+    const targets = new Map(plan.moves.map((m) => [m.id, m.to]));
+    setSupplements((prev) =>
+      prev.map((other) => {
+        const to = targets.get(other.id);
+        return to ? { ...other, time: to, timeCategory: timeToCategory(to) } : other;
+      })
+    );
+    commitAdd(
+      { ...item, time: plan.preferred.time, timeCategory: plan.preferred.timeCategory },
+      {
+        ...plan.preferred,
+        reasons: plan.moves.map(
+          (m) => `${josa(m.name, "을/를")} ${m.from} → ${josa(m.to, "으로/로")} 옮겼어요. ${m.because}`
+        ),
+      }
+    );
+  };
+
+  const commitAdd = (newItem: Supplement, schedule: ScheduleSuggestion) => {
     setSupplements((prev) => [...prev, newItem]);
     setScheduleNotice({
       title: `${josa(newItem.name, "을/를")} ${schedule.timeCategory} ${schedule.time}에 배정했어요`,
@@ -650,6 +693,17 @@ export default function HomeTab({
             <X size={16} />
           </button>
         </div>
+      )}
+
+      {moveAsk && (
+        <MoveConfirmModal
+          title={`${josa(moveAsk.item.name, "과/와")} 같은 시간에 먹으면 좋지 않은 영양제가 있어요`}
+          moves={moveAsk.plan.moves}
+          moveNote={`옮기면 ${josa(moveAsk.item.name, "을/를")} ${moveAsk.plan.preferred.timeCategory} ${moveAsk.plan.preferred.time}에 배정해요.`}
+          keepNote={`옮기지 않으면 ${josa(moveAsk.item.name, "을/를")} ${moveAsk.plan.fallback.timeCategory} ${moveAsk.plan.fallback.time}에 배정해요.`}
+          onMove={() => answerMove(true)}
+          onKeep={() => answerMove(false)}
+        />
       )}
 
       {surveyEntry && (

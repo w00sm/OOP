@@ -111,10 +111,12 @@ export default function Home() {
   };
 
   // 약을 등록하면 설명서에 주의 성분이 있는 영양제를 간격을 두고 다른 시간으로 옮깁니다.
-  const addMedication = (medication: Medication) => {
+  // moveSupplements: 사용자가 "옮기기"를 고른 경우에만 겹치는 영양제 시간을 옮김 (약은 옮기지 않음)
+  const addMedication = (medication: Medication, moveSupplements: boolean) => {
     const nextMeds = [...medications, medication];
-    const { next, moved } = separateFromMedications(supplements, nextMeds);
     setMedications(nextMeds);
+    if (!moveSupplements) return;
+    const { next, moved } = separateFromMedications(supplements, nextMeds);
     if (moved.length > 0) setSupplements(next);
     // 옮긴 영양제가 있을 때만 안내를 바꿈 (없으면 이전 안내 유지)
     if (moved.length > 0) setMedNotice({ medName: shortMedName(medication.name), moved });

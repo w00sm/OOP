@@ -1,0 +1,97 @@
+.custom-modal-card.move-confirm {
+  max-width: 350px;
+  padding: 24px 20px 18px;
+  text-align: left;
+}
+
+.move-confirm-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3fbe7;
+  color: #5f8f2a;
+}
+
+.move-confirm h2 {
+  margin: 12px 0 4px;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.4;
+  color: #071426;
+}
+
+.custom-modal-card .move-confirm-sub {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #6f7b78;
+}
+
+.move-confirm-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.move-confirm-list li {
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: #f7faf7;
+  border: 1px solid #e1e7e3;
+}
+
+.move-confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #071426;
+}
+
+.move-confirm-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #6f7b78;
+  white-space: nowrap;
+}
+
+.move-confirm-time strong {
+  color: #3f6e12;
+  font-weight: 800;
+}
+
+.move-confirm-list small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #92400e;
+}
+
+.custom-modal-card .move-confirm-note {
+  margin: 12px 0 14px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #6f7b78;
+}
+
+.move-confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.custom-modal-card .move-confirm-buttons button.secondary {
+  background: #eef2ef;
+  color: #4b5563;
+}

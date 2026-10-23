@@ -58,7 +58,7 @@ type MyPageTabProps = {
   onReAdd: (entry: HistoryEntry) => void; // 복용 내역의 영양제를 다시 복용 관리에 추가
   medications: Medication[];
   medNotice: MedNotice | null;
-  onAddMedication: (medication: Medication) => void;
+  onAddMedication: (medication: Medication, moveSupplements: boolean) => void;
   onRemoveMedication: (id: number) => void;
   onCloseMedNotice: () => void;
 };

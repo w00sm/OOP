@@ -174,7 +174,7 @@ export function separateFromMedications(
       to: plan.time,
       medName: shortMedName(conflict.med.name),
       gap: conflict.gap,
-      because: `${shortMedName(conflict.med.name)} 설명서에 ${conflict.hit.i} 주의가 있어 ${conflict.gap}시간 이상 떨어뜨렸어요.`,
+      because: `${shortMedName(conflict.med.name)} 설명서에 ${conflict.hit.i} 주의가 있어 ${conflict.gap}시간 이상 간격이 필요해요.`,
     });
   }
   return { next, moved };
@@ -227,4 +227,71 @@ export function withTiming(name: string, dose: string) {
   const ingredients = detectIngredients(name);
   const rule = INGREDIENT_RULES.find((item) => ingredients.includes(item.name));
   return `${text} · ${rule?.timing ?? "식후"}`;
+}
+
+// 이 시간에 이 영양제를 먹으면 생기는 충돌 (영양제끼리 2시간 안 · 약 설명서 간격 안)
+function conflictsOf(name: string, time: string, others: Supplement[], medications: Medication[]) {
+  const ingredients = detectIngredients(name);
+  const withSupplements = others.flatMap((item) =>
+    tooClose(item.time, time)
+      ? interactionsBetween(ingredients, detectIngredients(item.name))
+          .filter((rule) => rule.type === "separate")
+          .map((rule) => ({ item, reason: rule.reason }))
+      : []
+  );
+  return { withSupplements, withMeds: medConflictsAt(ingredients, time, medications) };
+}
+
+export type SupplementMovePlan = {
+  preferred: ScheduleSuggestion; // 새 영양제를 원래 좋은 시간에 둘 때
+  fallback: ScheduleSuggestion; // 기존 영양제를 옮기지 않을 때 (새 영양제가 피해서 배정)
+  moves: MovedSupplement[]; // 옮길 기존 영양제 (없으면 물어볼 필요 없음)
+};
+
+// 영양제를 추가할 때: 새 영양제를 좋은 시간에 두려면 겹치는 기존 영양제를 어디로 옮겨야 하는지
+// (처방약은 옮기지 않으므로, 새 영양제의 좋은 시간도 약과 겹치지 않는 시간 중에서 고름)
+export function planMovesForNewSupplement(
+  name: string,
+  existing: Supplement[],
+  medications: Medication[]
+): SupplementMovePlan {
+  const fallback = suggestSchedule(name, existing, medications);
+  const preferred = suggestSchedule(name, [], medications);
+  const none = { preferred, fallback, moves: [] };
+  if (preferred.time === fallback.time) return none;
+
+  const clashing = conflictsOf(name, preferred.time, existing, medications).withSupplements;
+  if (clashing.length === 0) return none; // 함께 먹으면 좋은 영양제 쪽에 맞춘 경우
+
+  const newItem: Supplement = {
+    id: -1,
+    name,
+    desc: "",
+    time: preferred.time,
+    timeCategory: preferred.timeCategory,
+    checked: false,
+  };
+  let placed = [...existing, newItem];
+  const moves: MovedSupplement[] = [];
+  for (const { item, reason } of clashing) {
+    if (moves.some((move) => move.id === item.id)) continue;
+    const others = placed.filter((other) => other.id !== item.id);
+    const plan = suggestSchedule(item.name, others, medications);
+    const after = conflictsOf(item.name, plan.time, others, medications);
+    // 옮길 곳이 없으면 이 방법은 쓰지 않음 (새 영양제가 피해서 배정)
+    if (plan.time === item.time || after.withSupplements.length > 0 || after.withMeds.length > 0) return none;
+    placed = placed.map((other) =>
+      other.id === item.id ? { ...other, time: plan.time, timeCategory: plan.timeCategory } : other
+    );
+    moves.push({
+      id: item.id,
+      name: item.name,
+      from: item.time,
+      to: plan.time,
+      medName: "",
+      gap: 2,
+      because: reason,
+    });
+  }
+  return { preferred, fallback, moves };
 }

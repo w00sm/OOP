@@ -323,7 +323,7 @@ export default function MedicationSheet({
               <p>필요할 때 드시는 약은 영양제 시간을 옮기지 않아요. 홈에서 먹었다고 체크하면 간격이 필요한 영양제와 먹어도 되는 시각을 알려드려요.</p>
             ) : preview && preview.moved.length > 0 ? (
               <p>
-                → 등록하면 복용 중인 영양제 시간을 옮길게요:{" "}
+                → 겹치는 영양제가 있어요. 등록할 때 시간을 옮길지 물어볼게요:{" "}
                 <b>{preview.moved.map((item) => `${item.name} ${item.from} → ${item.to}`).join(", ")}</b>
               </p>
             ) : (

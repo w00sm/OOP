@@ -12,7 +12,8 @@ import {
   shortMedName,
   type Medication,
 } from "../services/medicationService";
-import type { MovedSupplement } from "../services/scheduleService";
+import { separateFromMedications, type MovedSupplement } from "../services/scheduleService";
+import MoveConfirmModal from "./MoveConfirmModal";
 import { josa } from "../utils/josa";
 import "./Medications.css";
 
@@ -26,7 +27,7 @@ type MedicationsViewProps = {
   medications: Medication[];
   notice: MedNotice | null;
   onBack: () => void;
-  onAdd: (medication: Medication) => void;
+  onAdd: (medication: Medication, moveSupplements: boolean) => void;
   onRemove: (id: number) => void;
   onCloseNotice: () => void;
 };
@@ -43,6 +44,8 @@ export default function MedicationsView({
   const [showSheet, setShowSheet] = useState(false);
   const [openReasons, setOpenReasons] = useState<number | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<Medication | null>(null);
+  // 약을 등록할 때 옮길지 묻는 영양제
+  const [moveAsk, setMoveAsk] = useState<{ medication: Medication; moved: MovedSupplement[] } | null>(null);
 
   return (
     <>
@@ -145,8 +148,27 @@ export default function MedicationsView({
           medications={medications}
           onClose={() => setShowSheet(false)}
           onSubmit={(medication) => {
-            onAdd(medication);
             setShowSheet(false);
+            // 겹치는 영양제가 있으면 옮길지 먼저 물어봄 (약은 옮기지 않음)
+            const { moved } = separateFromMedications(supplements, [...medications, medication]);
+            if (moved.length > 0) setMoveAsk({ medication, moved });
+            else onAdd(medication, false);
+          }}
+        />
+      )}
+
+      {moveAsk && (
+        <MoveConfirmModal
+          title={`${josa(shortMedName(moveAsk.medication.name), "과/와")} 간격이 부족한 영양제가 있어요`}
+          moves={moveAsk.moved}
+          keepNote="옮기지 않으면 영양제 카드에 간격 경고가 표시돼요."
+          onMove={() => {
+            onAdd(moveAsk.medication, true);
+            setMoveAsk(null);
+          }}
+          onKeep={() => {
+            onAdd(moveAsk.medication, false);
+            setMoveAsk(null);
           }}
         />
       )}
